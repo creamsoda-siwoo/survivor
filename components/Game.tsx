@@ -758,17 +758,24 @@ export default function Game() {
     // --- Input Handling ---
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if(e.code === 'Space') state.player?.dash(); 
-            if(e.code === 'KeyW') state.keys.w = true; 
-            if(e.code === 'KeyA') state.keys.a = true; 
-            if(e.code === 'KeyS') state.keys.s = true; 
-            if(e.code === 'KeyD') state.keys.d = true;
+            if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'TEXTAREA') return;
+
+            if(e.code === 'Space') {
+                state.player?.dash();
+            } 
+            
+            if(e.code === 'KeyW' || e.code === 'ArrowUp') state.keys.w = true; 
+            if(e.code === 'KeyA' || e.code === 'ArrowLeft') state.keys.a = true; 
+            if(e.code === 'KeyS' || e.code === 'ArrowDown') state.keys.s = true; 
+            if(e.code === 'KeyD' || e.code === 'ArrowRight') state.keys.d = true;
         };
         const handleKeyUp = (e: KeyboardEvent) => {
-            if(e.code === 'KeyW') state.keys.w = false; 
-            if(e.code === 'KeyA') state.keys.a = false; 
-            if(e.code === 'KeyS') state.keys.s = false; 
-            if(e.code === 'KeyD') state.keys.d = false;
+            if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'TEXTAREA') return;
+
+            if(e.code === 'KeyW' || e.code === 'ArrowUp') state.keys.w = false; 
+            if(e.code === 'KeyA' || e.code === 'ArrowLeft') state.keys.a = false; 
+            if(e.code === 'KeyS' || e.code === 'ArrowDown') state.keys.s = false; 
+            if(e.code === 'KeyD' || e.code === 'ArrowRight') state.keys.d = false;
         };
         window.addEventListener('keydown', handleKeyDown);
         window.addEventListener('keyup', handleKeyUp);
@@ -834,6 +841,7 @@ export default function Game() {
         state.weapons = { blaster: { level: 1, cd: 0, maxCd: 40, evolved: false }, orbit: { level: 0, cd: 0, angle: 0, count: 1 }, field: { level: 0, cd: 0, radius: 80 }, tesla: { level: 0, cd: 0, maxCd: 120 }, missile: { level: 0, cd: 0, maxCd: 80 }, gravity: { level: 0, cd: 0, maxCd: 300 } };
         state.ult = { ready: true, charge: 100, cd: 0, maxCd: 1800 };
         state.player = new Player(); state.enemies = []; state.items = []; state.particles = []; state.projectiles = []; state.popups = []; state.gravityWells = []; state.boss = null;
+        state.keys = { w: false, a: false, s: false, d: false, space: false };
         setHudState({ hp: 100, xp: 0, level: 1, kills: 0, coins: 0, time: '00:00', bossHp: 100, ultReady: true });
     };
 
