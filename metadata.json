@@ -1,5 +1,5 @@
 {
   "name": "Geometry Survivor",
-  "description": "v5.0 Velocity Update: 대시(더블탭) 추가, 신규 무기 중력장, 일시정지 버그 수정. 무한 성장 로그라이크 서바이벌.",
+  "description": "v6.0 Abyss Update: 0.75x 광각 모드, 유물 뽑기(가차) 시스템, 무기 진화(엑스터미네이터), CRT 필터 추가.",
   "requestFramePermissions": []
 }
