@@ -1,0 +1,1 @@
+// This file is deprecated. Please use app/page.tsx for Next.js structure.
