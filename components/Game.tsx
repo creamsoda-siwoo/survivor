@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -58,7 +59,7 @@ const ACHIEVEMENT_LIST = [
 
 // --- Game Engine State Container ---
 let saveData: any = null;
-let currentUserId: string = 'guest'; // Track currently logged in user
+let currentUserId: string = 'guest'; 
 
 const state: any = {
     running: false, paused: false, gameOver: false,
@@ -81,9 +82,8 @@ const state: any = {
     gravityWells: []
 };
 
-// --- Helper Functions (Outside Component) ---
+// --- Helper Functions ---
 
-// Load data for specific user
 function loadSaveData(userId: string) {
     if (typeof window === 'undefined') return;
     currentUserId = userId;
@@ -120,7 +120,7 @@ function save() {
     }
 }
 
-// --- Game Logic Classes ---
+// --- Game Classes ---
 
 class PopupText {
     text: string; x: number; y: number; color: string; life: number;
@@ -412,7 +412,7 @@ class Enemy {
 
 class Boss extends Enemy {
     constructor(x: number, y: number) { super('OCTAGON', x, y); this.hp = 5000 * (1 + state.time/300); this.maxHp = this.hp; this.size = 60; this.speed = 1.2; this.color = '#bc13fe'; }
-    die() { createExplosion(this.x, this.y, this.color, 50); for(let i=0; i<20; i++) { let it = new Item(this.x + (Math.random()-0.5)*50, this.y + (Math.random()-0.5)*50, 50, 'XP'); it.isCoin = true; it.val = 100; state.items.push(it); } state.boss = null; }
+    die() { createExplosion(this.x, this.y, this.color, 50); for(let i=0; i<20; i++) { let it = new Item(this.x + (Math.random()-0.5)*50, this.y + (Math.random()-0.5)*50, 50, 'XP'); it.isCoin = true; it.val = 100; state.items.push(it); } state.boss = null; setBossHudActive(false); }
 }
 
 // --- External Control Variables ---
@@ -775,24 +775,33 @@ export default function Game() {
     // --- Input Handling ---
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'TEXTAREA') return;
+            const target = e.target as HTMLElement;
+            if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
 
-            if(e.code === 'Space') {
+            const code = e.code;
+            if(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(code)) {
+                // prevent scrolling
+                e.preventDefault();
+            }
+
+            if(code === 'Space') {
                 state.player?.dash();
             } 
             
-            if(e.code === 'KeyW' || e.code === 'ArrowUp') state.keys.w = true; 
-            if(e.code === 'KeyA' || e.code === 'ArrowLeft') state.keys.a = true; 
-            if(e.code === 'KeyS' || e.code === 'ArrowDown') state.keys.s = true; 
-            if(e.code === 'KeyD' || e.code === 'ArrowRight') state.keys.d = true;
+            if(code === 'KeyW' || code === 'ArrowUp') state.keys.w = true; 
+            if(code === 'KeyA' || code === 'ArrowLeft') state.keys.a = true; 
+            if(code === 'KeyS' || code === 'ArrowDown') state.keys.s = true; 
+            if(code === 'KeyD' || code === 'ArrowRight') state.keys.d = true;
         };
         const handleKeyUp = (e: KeyboardEvent) => {
-            if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'TEXTAREA') return;
+            const target = e.target as HTMLElement;
+            if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
 
-            if(e.code === 'KeyW' || e.code === 'ArrowUp') state.keys.w = false; 
-            if(e.code === 'KeyA' || e.code === 'ArrowLeft') state.keys.a = false; 
-            if(e.code === 'KeyS' || e.code === 'ArrowDown') state.keys.s = false; 
-            if(e.code === 'KeyD' || e.code === 'ArrowRight') state.keys.d = false;
+            const code = e.code;
+            if(code === 'KeyW' || code === 'ArrowUp') state.keys.w = false; 
+            if(code === 'KeyA' || code === 'ArrowLeft') state.keys.a = false; 
+            if(code === 'KeyS' || code === 'ArrowDown') state.keys.s = false; 
+            if(code === 'KeyD' || code === 'ArrowRight') state.keys.d = false;
         };
         window.addEventListener('keydown', handleKeyDown);
         window.addEventListener('keyup', handleKeyUp);
@@ -1058,7 +1067,7 @@ export default function Game() {
                         {['damage','health','speed','greed','cooldown','magnet','crit','regen','revive'].map(id => {
                             const lvl = saveData.upgrades[id] || 0;
                             const cost = id === 'revive' ? 5000 * (lvl+1) : SHOP_BASE_COST * (lvl + 1);
-                            const nameMap:any = { damage: '기초 공격학', health: '체력 단련', speed: '기동성 훈련', greed: '탐욕의 시선', cooldown: '속사 모듈', magnet: '자기장 확장', crit: '정밀 타격', regen: '나노봇', revive: '심장 충격기' };
+                            const nameMap:any = { damage: '기초 공격학', health: '체력 단련', speed: '기동성 훈련', greed: '탐욕의 시선', cooldown: '속사 모듈', magnet: '자기장 확장', crit: '정밀 타격', regen: '나노봇', revive: '부활 프로토콜' };
                             const descMap:any = { damage: '공격력 +10%', health: '체력 +10', speed: '이속 +5%', greed: '골드 +10%', cooldown: '쿨타임 -5%', magnet: '범위 +30', crit: '치명타 +5%', regen: '초당 회복', revive: '부활 +1회' };
                             return (
                                 <div key={id} className="shop-item">
