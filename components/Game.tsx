@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { supabase } from '@/lib/supabase';
 
 // --- Constants & Configuration ---
 const BOSS_SPAWN_TIME = 60; 
@@ -56,8 +57,9 @@ const ACHIEVEMENT_LIST = [
 ];
 
 // --- Game Engine State Container ---
-// Used to avoid React re-renders for the game loop
 let saveData: any = null;
+let currentUserId: string = 'guest'; // Track currently logged in user
+
 const state: any = {
     running: false, paused: false, gameOver: false,
     lastTime: 0, time: 0, score: 0, kills: 0, coins: 0, level: 1, xp: 0, nextLevelXp: 10,
@@ -80,9 +82,14 @@ const state: any = {
 };
 
 // --- Helper Functions (Outside Component) ---
-function loadSaveData() {
+
+// Load data for specific user
+function loadSaveData(userId: string) {
     if (typeof window === 'undefined') return;
-    const d = localStorage.getItem('ifko_save_v9');
+    currentUserId = userId;
+    const key = `ifko_save_v9_${userId}`;
+    const d = localStorage.getItem(key);
+    
     const DEFAULT_DATA = {
         coins: 0,
         currentSkin: 'default',
@@ -95,11 +102,11 @@ function loadSaveData() {
         achievements: [],
         stats: { totalKills: 0, totalTime: 0, totalCoins: 0 }
     };
+    
     if(!d) {
         saveData = JSON.parse(JSON.stringify(DEFAULT_DATA));
     } else {
         const parsed = JSON.parse(d);
-        // Merge with default to ensure new keys exist
         saveData = { ...DEFAULT_DATA, ...parsed };
         if(!saveData.upgrades.cooldown) saveData.upgrades.cooldown = 0;
         if(!saveData.stats) saveData.stats = { totalKills: 0, totalTime: 0, totalCoins: 0 };
@@ -108,7 +115,8 @@ function loadSaveData() {
 
 function save() {
     if (typeof window !== 'undefined' && saveData) {
-        localStorage.setItem('ifko_save_v9', JSON.stringify(saveData));
+        const key = `ifko_save_v9_${currentUserId}`;
+        localStorage.setItem(key, JSON.stringify(saveData));
     }
 }
 
@@ -265,9 +273,6 @@ class Player {
         }
         createExplosion(this.x, this.y, '#ff0000', 5);
         
-        // Shake effect simulated by just CSS on body if possible, but here we can't access body style easily in React component same way.
-        // We'll skip the body transform shake for simplicity or use a ref if needed.
-
         if (this.hp <= 0) {
             if (this.revives > 0) {
                 this.revives--;
@@ -526,7 +531,14 @@ export default function Game() {
     const joystickKnobRef = useRef<HTMLDivElement>(null);
 
     // React UI State
-    const [showStart, setShowStart] = useState(true);
+    const [showAuth, setShowAuth] = useState(true); // Auth Screen
+    const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [authError, setAuthError] = useState('');
+    const [currentUser, setCurrentUser] = useState<string | null>(null);
+
+    const [showStart, setShowStart] = useState(false);
     const [showShop, setShowShop] = useState(false);
     const [showArmory, setShowArmory] = useState(false);
     const [showClass, setShowClass] = useState(false);
@@ -554,9 +566,75 @@ export default function Game() {
         setUpgradeCards = setUpgradeCardsList;
         setGachaResult = setGachaRes;
         forceUpdateHUD = () => setHudState(prev => ({...prev}));
-        loadSaveData();
-        setUiCoins(saveData.coins);
+        
+        // Check active session
+        const checkSession = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                loginUser(session.user.id);
+            }
+        };
+        checkSession();
+
     }, []);
+
+    // --- Authentication Handlers ---
+    const handleLogin = async () => {
+        if(!email || !password) { setAuthError("이메일과 비밀번호를 입력하세요."); return; }
+        setAuthError('');
+        
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+        });
+
+        if (error) {
+            setAuthError(error.message);
+        } else if (data.user) {
+            loginUser(data.user.id);
+        }
+    };
+
+    const handleSignup = async () => {
+        if(!email || !password) { setAuthError("이메일과 비밀번호를 입력하세요."); return; }
+        setAuthError('');
+        
+        const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+        });
+
+        if (error) {
+            setAuthError(error.message);
+        } else {
+            alert("회원가입 성공! 로그인 해주세요.");
+            setAuthMode('login');
+        }
+    };
+
+    const handleGuestLogin = () => {
+        loginUser('guest');
+    };
+
+    const loginUser = (userId: string) => {
+        setCurrentUser(userId);
+        loadSaveData(userId);
+        setUiCoins(saveData.coins);
+        setShowAuth(false);
+        setShowStart(true);
+        setAuthError('');
+        setEmail('');
+        setPassword('');
+    };
+
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        setCurrentUser(null);
+        setShowSettings(false);
+        setShowStart(false);
+        setShowAuth(true);
+        setAuthMode('login');
+    };
 
     // --- Core Game Loop ---
     useEffect(() => {
@@ -565,12 +643,24 @@ export default function Game() {
         const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
 
         const loop = () => {
-            if (!state.running) {
+            // If in auth screen, just render background
+            if (showAuth) {
+                ctx.fillStyle = '#050508'; ctx.fillRect(0, 0, canvas.width, canvas.height);
                 requestAnimationFrame(loop);
                 return;
             }
 
-            if (!state.paused) {
+            if (!state.running) {
+                // Render idle background animation if needed, or just static
+                if(!showStart) { 
+                   // Only run loop heavily when game is running
+                }
+                if(state.running === false && showStart === false && showAuth === false && showGameOver === false) {
+                   // Edge case transition
+                }
+            }
+
+            if (state.running && !state.paused) {
                 if (state.time % 60 === 0 && state.enemies.length < 300) spawnEnemy();
                 if (state.time === BOSS_SPAWN_TIME * 60 && !state.boss) spawnBoss();
                 
@@ -621,32 +711,35 @@ export default function Game() {
 
             // Render
             ctx.fillStyle = '#050508'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.save(); 
-            const ZOOM = 0.75;
-            const cx = canvas.width / 2, cy = canvas.height / 2; 
-            ctx.translate(cx, cy); ctx.scale(ZOOM, ZOOM); 
-            if(state.player) ctx.translate(-state.player.x, -state.player.y);
             
-            // Grid
-            if(state.player) {
-                ctx.strokeStyle = 'rgba(50, 0, 100, 0.2)'; ctx.lineWidth = 2; 
-                const gridSize = 100; 
-                const offX = Math.floor(state.player.x / gridSize) * gridSize;
-                const offY = Math.floor(state.player.y / gridSize) * gridSize;
-                ctx.beginPath(); 
-                for (let x = offX - 1000; x < offX + 1000; x += gridSize) { ctx.moveTo(x, offY - 1000); ctx.lineTo(x, offY + 1000); } 
-                for (let y = offY - 1000; y < offY + 1000; y += gridSize) { ctx.moveTo(offX - 1000, y); ctx.lineTo(offX + 1000, y); } 
-                ctx.stroke();
-            }
+            if (state.running || (!showAuth && !showStart)) {
+                ctx.save(); 
+                const ZOOM = 0.75;
+                const cx = canvas.width / 2, cy = canvas.height / 2; 
+                ctx.translate(cx, cy); ctx.scale(ZOOM, ZOOM); 
+                if(state.player) ctx.translate(-state.player.x, -state.player.y);
+                
+                // Grid
+                if(state.player) {
+                    ctx.strokeStyle = 'rgba(50, 0, 100, 0.2)'; ctx.lineWidth = 2; 
+                    const gridSize = 100; 
+                    const offX = Math.floor(state.player.x / gridSize) * gridSize;
+                    const offY = Math.floor(state.player.y / gridSize) * gridSize;
+                    ctx.beginPath(); 
+                    for (let x = offX - 1000; x < offX + 1000; x += gridSize) { ctx.moveTo(x, offY - 1000); ctx.lineTo(x, offY + 1000); } 
+                    for (let y = offY - 1000; y < offY + 1000; y += gridSize) { ctx.moveTo(offX - 1000, y); ctx.lineTo(offX + 1000, y); } 
+                    ctx.stroke();
+                }
 
-            state.items.forEach((i: any) => i.draw(ctx)); 
-            state.gravityWells.forEach((g: any) => { ctx.beginPath(); ctx.arc(g.x, g.y, g.range, 0, Math.PI*2); ctx.strokeStyle='#6600cc'; ctx.stroke(); });
-            state.enemies.forEach((e: any) => e.draw(ctx)); 
-            if(state.player) state.player.draw(ctx); 
-            state.projectiles.forEach((p: any) => p.draw(ctx)); 
-            state.particles.forEach((p: any) => p.draw(ctx)); 
-            state.popups.forEach((p: any) => p.draw(ctx)); 
-            ctx.restore();
+                state.items.forEach((i: any) => i.draw(ctx)); 
+                state.gravityWells.forEach((g: any) => { ctx.beginPath(); ctx.arc(g.x, g.y, g.range, 0, Math.PI*2); ctx.strokeStyle='#6600cc'; ctx.stroke(); });
+                state.enemies.forEach((e: any) => e.draw(ctx)); 
+                if(state.player) state.player.draw(ctx); 
+                state.projectiles.forEach((p: any) => p.draw(ctx)); 
+                state.particles.forEach((p: any) => p.draw(ctx)); 
+                state.popups.forEach((p: any) => p.draw(ctx)); 
+                ctx.restore();
+            }
 
             requestAnimationFrame(loop);
         };
@@ -660,7 +753,7 @@ export default function Game() {
             window.removeEventListener('resize', resize);
             cancelAnimationFrame(raf);
         }
-    }, []);
+    }, [showAuth, showStart]);
 
     // --- Input Handling ---
     useEffect(() => {
@@ -803,7 +896,7 @@ export default function Game() {
     };
 
     const openSettings = () => { setShowStart(false); setShowSettings(true); };
-    const resetData = () => { if(confirm("모든 데이터를 초기화하시겠습니까?")) { localStorage.removeItem('ifko_save_v9'); window.location.reload(); } };
+    const resetData = () => { if(confirm("현재 계정의 데이터를 초기화하시겠습니까?")) { localStorage.removeItem(`ifko_save_v9_${currentUserId}`); window.location.reload(); } };
 
     return (
         <div id="game-container">
@@ -816,10 +909,10 @@ export default function Game() {
             <div ref={joystickZoneRef} id="joystick-zone" className={`interactive ${!state.running || state.paused ? 'hidden' : ''}`}></div>
             <div ref={joystickBaseRef} id="joystick-base"></div>
             <div ref={joystickKnobRef} id="joystick-knob"></div>
-            {!showStart && <div id="dash-hint">화면 더블 탭 / 스페이스바 : 대시</div>}
+            {!showStart && !showAuth && <div id="dash-hint">화면 더블 탭 / 스페이스바 : 대시</div>}
 
             {/* HUD */}
-            {!showStart && !showGameOver && (
+            {!showStart && !showGameOver && !showAuth && (
                 <div id="hud" className="ui-layer">
                     <div className="top-row">
                         <div style={{flex:1}}>
@@ -853,13 +946,47 @@ export default function Game() {
                 </div>
             )}
 
+            {/* Auth Screen */}
+            {showAuth && (
+                <div className="ui-layer menu-screen interactive" style={{display:'flex'}}>
+                     <h1 className="screen-title" style={{fontSize:'3.5rem', marginBottom:'10px', color:'var(--primary)'}}>IFKO<br/><span style={{fontSize:'2.5rem', color:'#fff'}}>SURVIVOR</span></h1>
+                     <p className="screen-subtitle" style={{marginBottom:'30px'}}>IDENTITY REQUIRED</p>
+
+                     <div style={{maxWidth:'300px', width:'100%'}}>
+                        <input type="email" className="auth-input" placeholder="이메일 (Email)" value={email} onChange={e => setEmail(e.target.value)} />
+                        <input type="password" className="auth-input" placeholder="비밀번호 (Password)" value={password} onChange={e => setPassword(e.target.value)} />
+                        
+                        {authError && <p style={{color:'#ff3333', fontSize:'0.9rem', marginTop:'-10px', marginBottom:'15px'}}>{authError}</p>}
+
+                        {authMode === 'login' ? (
+                            <>
+                                <button className="btn" style={{width:'100%', marginBottom:'10px'}} onClick={handleLogin}>로그인</button>
+                                <button className="btn btn-secondary" style={{width:'100%', marginBottom:'20px'}} onClick={() => {setAuthMode('signup'); setAuthError('');}}>회원가입으로 이동</button>
+                            </>
+                        ) : (
+                            <>
+                                <button className="btn" style={{width:'100%', marginBottom:'10px'}} onClick={handleSignup}>회원가입</button>
+                                <button className="btn btn-secondary" style={{width:'100%', marginBottom:'20px'}} onClick={() => {setAuthMode('login'); setAuthError('');}}>로그인으로 돌아가기</button>
+                            </>
+                        )}
+
+                        <div style={{borderTop:'1px solid rgba(255,255,255,0.2)', margin:'10px 0'}}></div>
+                        <button className="btn btn-secondary" style={{width:'100%'}} onClick={handleGuestLogin}>게스트로 시작</button>
+                     </div>
+                </div>
+            )}
+
             {/* Start Screen */}
             {showStart && (
                 <div className="ui-layer menu-screen interactive" style={{display:'flex'}}>
+                    <div style={{position:'absolute', top:'20px', left:'20px', color:'#aaa', fontSize:'0.9rem'}}>
+                        USER: <span style={{color:'var(--primary)'}}>{currentUser === 'guest' ? 'Guest' : 'Agent'}</span>
+                    </div>
+
                     <h1 className="screen-title" style={{fontSize:'3.5rem', marginBottom:'10px', color:'var(--primary)'}}>IFKO<br/><span style={{fontSize:'2.5rem', color:'#fff'}}>SURVIVOR</span></h1>
                     <p className="screen-subtitle" style={{marginBottom:'40px'}}>PLANET : IFKO-S512</p>
                     
-                    <button className="btn" style={{width:'200px', height:'60px', fontSize:'1.2rem', marginBottom:'30px'}} onClick={startGame}>MISSION START</button>
+                    <button className="btn" style={{width:'200px', height:'60px', fontSize:'1.2rem', marginBottom:'30px'}} onClick={startGame}>START</button>
                     
                     <div className="menu-grid">
                         <button className="btn btn-secondary" onClick={openClassScreen}>직업소</button>
@@ -1074,6 +1201,7 @@ export default function Game() {
                     <h1 className="screen-title">SETTINGS</h1>
                     <p className="screen-subtitle">시스템 설정</p>
                     <div style={{display:'flex', flexDirection:'column', gap:'15px'}}>
+                        <button className="btn btn-danger" onClick={handleLogout}>로그아웃</button>
                         <button className="btn btn-danger" onClick={resetData}>데이터 초기화</button>
                         <button className="btn btn-secondary" onClick={() => {setShowSettings(false); setShowStart(true);}}>뒤로가기</button>
                     </div>
