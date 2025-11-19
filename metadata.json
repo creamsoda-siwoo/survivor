@@ -1,5 +1,5 @@
 {
-  "name": "Geometry Survivor",
-  "description": "v6.0 Abyss Update: 0.75x 광각 모드, 유물 뽑기(가차) 시스템, 무기 진화(엑스터미네이터), CRT 필터 추가.",
+  "name": "Ifko Survivor (Next.js)",
+  "description": "이프코 서바이버 v9.0 Next.js 포팅 버전: 연구소 확장, 업적 시스템, 고급 전투 메커니즘 포함.",
   "requestFramePermissions": []
 }
