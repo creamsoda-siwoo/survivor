@@ -38,6 +38,7 @@ const ARTIFACTS = [
     { id: 'thorn', name: '가시 갑옷', desc: '피격 시 반사 피해', icon: '🌵' }
 ];
 
+// In-Game Level Up Options
 const UPGRADES = [
     { id: 'blaster', name: '블래스터 강화', desc: '기본 무기 공격력/속도 증가', type: 'WEAPON', icon: '🔫' },
     { id: 'orbit', name: '위성 포격', desc: '주변을 도는 에너지 볼 추가', type: 'WEAPON', icon: '🪐' },
@@ -45,7 +46,10 @@ const UPGRADES = [
     { id: 'tesla', name: '테슬라 코일', desc: '연쇄 번개 공격', type: 'WEAPON', icon: '🌩️' },
     { id: 'missile', name: '유도 미사일', desc: '적을 추적하여 폭발', type: 'WEAPON', icon: '🚀' },
     { id: 'gravity', name: '중력 붕괴', desc: '적을 끌어당기는 블랙홀', type: 'WEAPON', icon: '🌌' },
-    { id: 'heal', name: '긴급 수리', desc: '체력 30% 회복', type: 'STAT', icon: '❤️' }
+    { id: 'heal', name: '긴급 수리', desc: '체력 30% 회복', type: 'STAT', icon: '❤️' },
+    { id: 'giant', name: '거대화', desc: '모든 투사체/범위 크기 +15%', type: 'STAT', icon: '🐘' },
+    { id: 'multishot', name: '멀티샷', desc: '투사체 개수 +1 (일부 무기)', type: 'STAT', icon: '🍒' },
+    { id: 'sniper', name: '스나이퍼', desc: '투사체 속도/관통력 증가', type: 'STAT', icon: '🎯' }
 ];
 
 const ACHIEVEMENT_LIST = [
@@ -77,9 +81,16 @@ const state: any = {
         missile: { level: 0, cd: 0, maxCd: 80 },
         gravity: { level: 0, cd: 0, maxCd: 300 }
     },
+    // In-game only stats (reset on death)
+    sessionStats: {
+        sizeMult: 1,
+        projectileCount: 0,
+        projectileSpeed: 1
+    },
     ult: { ready: true, charge: 100, cd: 0, maxCd: 1800 },
     popups: [],
-    gravityWells: []
+    gravityWells: [],
+    shockwaves: [] // For Ultimate visual effect
 };
 
 // --- Helper Functions ---
@@ -96,7 +107,8 @@ function loadSaveData(userId: string) {
         ownedSkins: ['default'],
         currentClass: 'soldier',
         ownedClasses: ['soldier'],
-        upgrades: { damage: 0, health: 0, speed: 0, greed: 0, cooldown: 0, magnet: 0, crit: 0, regen: 0, revive: 0 },
+        // Added new lab upgrades: luck, evasion, xp, duration
+        upgrades: { damage: 0, health: 0, speed: 0, greed: 0, cooldown: 0, magnet: 0, crit: 0, regen: 0, revive: 0, luck: 0, evasion: 0, xp: 0, duration: 0 },
         equipment: { weapon: 0, armor: 0, boots: 0 },
         artifacts: {},
         achievements: [],
@@ -108,7 +120,12 @@ function loadSaveData(userId: string) {
     } else {
         const parsed = JSON.parse(d);
         saveData = { ...DEFAULT_DATA, ...parsed };
+        // Backwards compatibility checks
         if(!saveData.upgrades.cooldown) saveData.upgrades.cooldown = 0;
+        if(!saveData.upgrades.luck) saveData.upgrades.luck = 0;
+        if(!saveData.upgrades.evasion) saveData.upgrades.evasion = 0;
+        if(!saveData.upgrades.xp) saveData.upgrades.xp = 0;
+        if(!saveData.upgrades.duration) saveData.upgrades.duration = 0;
         if(!saveData.stats) saveData.stats = { totalKills: 0, totalTime: 0, totalCoins: 0 };
     }
 }
@@ -131,28 +148,62 @@ class PopupText {
 
 class Particle {
     x: number; y: number; color: string; vx: number; vy: number; life: number; maxLife: number; size: number;
-    constructor(x: number, y: number, color: string, speed: number, life: number) {
+    constructor(x: number, y: number, color: string, speed: number, life: number, size: number = 0) {
         this.x = x; this.y = y; this.color = color; 
         const angle = Math.random() * Math.PI * 2; 
         this.vx = Math.cos(angle) * speed * Math.random(); 
         this.vy = Math.sin(angle) * speed * Math.random(); 
-        this.life = life; this.maxLife = life; this.size = Math.random() * 3 + 1;
+        this.life = life; this.maxLife = life; 
+        this.size = size > 0 ? size : Math.random() * 3 + 1;
     }
     update() { this.x += this.vx; this.y += this.vy; this.life--; this.vx *= 0.95; this.vy *= 0.95; return this.life <= 0; }
     draw(ctx: CanvasRenderingContext2D) { ctx.fillStyle = this.color; ctx.globalAlpha = this.life / this.maxLife; ctx.beginPath(); ctx.rect(this.x, this.y, this.size, this.size); ctx.fill(); ctx.globalAlpha = 1; }
 }
 
+class Shockwave {
+    x: number; y: number; r: number; maxR: number; color: string; alpha: number;
+    constructor(x: number, y: number, maxR: number = 1000, color: string = '#fff') {
+        this.x = x; this.y = y; this.r = 10; this.maxR = maxR; this.color = color; this.alpha = 1;
+    }
+    update() {
+        this.r += 30; // Expansion speed
+        this.alpha -= 0.02;
+        return this.alpha <= 0;
+    }
+    draw(ctx: CanvasRenderingContext2D) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+        ctx.strokeStyle = this.color;
+        ctx.lineWidth = 10;
+        ctx.globalAlpha = this.alpha;
+        ctx.stroke();
+        ctx.restore();
+    }
+}
+
 function createPopup(text: string, x: number, y: number, color: string) { state.popups.push(new PopupText(text, x, y, color)); }
-function createExplosion(x: number, y: number, color: string, count: number) { for(let i=0; i<count; i++) state.particles.push(new Particle(x, y, color, 5, 30)); }
+function createExplosion(x: number, y: number, color: string, count: number, size: number = 0) { for(let i=0; i<count; i++) state.particles.push(new Particle(x, y, color, 8, 40, size)); }
 
 class Item {
     x: number; y: number; val: number; size: number; type: string; isCoin: boolean; color: string;
     constructor(x: number, y: number, val: number, type = 'XP') {
         this.x = x; this.y = y; this.val = val; this.size = 5; this.type = type; this.isCoin = false;
+        // Luck affects coin value
+        const luckMult = 1 + ((saveData.upgrades.luck || 0) * 0.1);
+        
         if (type === 'HEAL') { this.color = '#ff0055'; this.size = 8; }
         else if (type === 'MAGNET') { this.color = '#0055ff'; this.size = 8; }
         else if (type === 'BOMB') { this.color = '#ffaa00'; this.size = 8; }
-        else { this.isCoin = Math.random() < 0.25; if (this.isCoin) { this.color = '#ffd700'; this.val = 50 * (1 + saveData.upgrades.greed * 0.1); } else { this.color = '#33ccff'; } }
+        else { 
+            this.isCoin = Math.random() < 0.25; 
+            if (this.isCoin) { 
+                this.color = '#ffd700'; 
+                this.val = Math.floor(50 * (1 + saveData.upgrades.greed * 0.1) * luckMult); 
+            } else { 
+                this.color = '#33ccff'; 
+            } 
+        }
     }
     update(player: any) {
         const dx = player.x - this.x, dy = player.y - this.y, dist = Math.sqrt(dx*dx + dy*dy);
@@ -178,13 +229,18 @@ class Item {
 
 class Projectile {
     x: number; y: number; vx: number; vy: number; dmg: number; color: string; duration: number; size: number; pierce: boolean; hitList: any[];
-    constructor(x: number, y: number, vx: number, vy: number, dmg: number, color: string, duration: number, size=4, pierce=false) { this.x = x; this.y = y; this.vx = vx; this.vy = vy; this.dmg = dmg; this.color = color; this.duration = duration; this.size = size; this.pierce = pierce; this.hitList = []; }
+    constructor(x: number, y: number, vx: number, vy: number, dmg: number, color: string, duration: number, size=4, pierce=false) { 
+        this.x = x; this.y = y; this.vx = vx; this.vy = vy; this.dmg = dmg; this.color = color; 
+        this.duration = duration * (1 + (saveData.upgrades.duration || 0) * 0.1); 
+        this.size = size * state.sessionStats.sizeMult; // Apply Giant size
+        this.pierce = pierce; this.hitList = []; 
+    }
     update() { this.x += this.vx; this.y += this.vy; this.duration--; return this.duration <= 0; }
     draw(ctx: CanvasRenderingContext2D) { ctx.fillStyle = this.color; ctx.shadowBlur = 10; ctx.shadowColor = this.color; ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0; }
 }
 
 class Player {
-    x: number; y: number; maxHp: number; hp: number; speed: number; dmgMult: number; cdReduc: number; size: number; invuln: number; dashCd: number; dashTime: number; dashVec: any; skin: string; critChance: number; regenRate: number; revives: number;
+    x: number; y: number; maxHp: number; hp: number; speed: number; dmgMult: number; cdReduc: number; size: number; invuln: number; dashCd: number; dashTime: number; dashVec: any; skin: string; critChance: number; regenRate: number; revives: number; evasion: number;
     constructor() {
         this.x = 0; this.y = 0;
         const job = CLASSES.find(c => c.id === saveData.currentClass) || CLASSES[0];
@@ -197,9 +253,10 @@ class Player {
         const shopHp = saveData.upgrades.health * 10;
         const shopSpd = saveData.upgrades.speed * 0.05;
         const shopCd = (saveData.upgrades.cooldown || 0) * 0.05;
-        const shopCrit = (saveData.upgrades.crit || 0) * 0.05;
+        const shopCrit = (saveData.upgrades.crit || 0) * 0.05 + (saveData.upgrades.luck || 0) * 0.02; // Luck adds small crit
         const shopRegen = (saveData.upgrades.regen || 0) * 1;
         const shopRevive = (saveData.upgrades.revive || 0);
+        const shopEvasion = (saveData.upgrades.evasion || 0) * 0.05;
 
         const equipDmg = saveData.equipment.weapon * 0.2; 
         const equipHp = saveData.equipment.armor * 20;    
@@ -214,6 +271,7 @@ class Player {
         this.critChance = shopCrit;
         this.regenRate = shopRegen;
         this.revives = shopRevive;
+        this.evasion = shopEvasion;
 
         this.size = 20;
         this.invuln = 0;
@@ -276,6 +334,13 @@ class Player {
 
     takeDamage(amt: number) {
         if (this.dashTime > 0 || this.invuln > 0) return;
+        
+        // Evasion check
+        if (Math.random() < this.evasion) {
+            createPopup("MISS", this.x, this.y - 30, '#aaa');
+            return;
+        }
+
         this.hp -= amt;
         this.invuln = 30;
         const thorns = saveData.artifacts.thorn || 0;
@@ -394,9 +459,12 @@ class Enemy {
         createExplosion(this.x, this.y, this.color, 8); 
         if(saveData.artifacts.fang && Math.random() < 0.1) { state.player.hp = Math.min(state.player.hp + 1, state.player.maxHp); createPopup("+1", state.player.x, state.player.y, '#0f0'); }
         const rand = Math.random();
-        if (rand < 0.005) state.items.push(new Item(this.x, this.y, 0, 'BOMB'));
-        else if (rand < 0.01) state.items.push(new Item(this.x, this.y, 0, 'MAGNET'));
-        else if (rand < 0.02) state.items.push(new Item(this.x, this.y, 0, 'HEAL'));
+        
+        // Luck affects drop rates
+        const luck = saveData.upgrades.luck || 0;
+        if (rand < 0.005 * (1+luck*0.2)) state.items.push(new Item(this.x, this.y, 0, 'BOMB'));
+        else if (rand < 0.01 * (1+luck*0.2)) state.items.push(new Item(this.x, this.y, 0, 'MAGNET'));
+        else if (rand < 0.02 * (1+luck*0.2)) state.items.push(new Item(this.x, this.y, 0, 'HEAL'));
         else state.items.push(new Item(this.x, this.y, 2, 'XP')); 
         state.kills++;
         saveData.stats.totalKills++;
@@ -434,7 +502,11 @@ function spawnEnemy() {
 }
 function spawnBoss() { const angle = Math.random() * Math.PI * 2, dist = 600, x = state.player.x + Math.cos(angle) * dist, y = state.player.y + Math.sin(angle) * dist; state.boss = new Boss(x, y); state.enemies.push(state.boss); setBossHudActive(true); }
 function removeEnemy(e: any) { const idx = state.enemies.indexOf(e); if (idx > -1) state.enemies.splice(idx, 1); if (e instanceof Boss) { state.boss = null; setBossHudActive(false); } }
-function addXp(amt: number) { state.xp += amt; if (state.xp >= state.nextLevelXp) { state.xp -= state.nextLevelXp; state.level++; state.nextLevelXp = Math.floor(state.nextLevelXp * 1.2); showUpgradeScreen(); } }
+function addXp(amt: number) { 
+    const xpBoost = 1 + ((saveData.upgrades.xp || 0) * 0.1);
+    state.xp += amt * xpBoost; 
+    if (state.xp >= state.nextLevelXp) { state.xp -= state.nextLevelXp; state.level++; state.nextLevelXp = Math.floor(state.nextLevelXp * 1.2); showUpgradeScreen(); } 
+}
 
 function fireTesla(target: any, bounces: number, dmg: number) {
     let curr = target, visited = [target];
@@ -447,37 +519,68 @@ function fireTesla(target: any, bounces: number, dmg: number) {
 }
 function createLightning(x1: number, y1: number, x2: number, y2: number) { const d = Math.hypot(x2-x1, y2-y1), steps = d/10; for(let i=0; i<steps; i++) state.particles.push(new Particle(x1+(x2-x1)*(i/steps), y1+(y2-y1)*(i/steps), '#88ccff', 0, 5)); }
 
-function spawnGravityWell(x: number, y: number, level: number) { state.gravityWells.push({x, y, life: 180, range: 150+level*20, dmg: level}); }
+function spawnGravityWell(x: number, y: number, level: number) { state.gravityWells.push({x, y, life: 180, range: 150+level*20 * state.sessionStats.sizeMult, dmg: level}); }
 
 function updateWeapons() {
     const p = state.player, w = state.weapons; let cdReduc = 1 - p.cdReduc;
+    
+    // Stats applied to weapons
+    const sizeMult = state.sessionStats.sizeMult;
+    const projSpeedMult = state.sessionStats.projectileSpeed;
+    const extraProj = state.sessionStats.projectileCount;
+
     if (w.blaster.cd <= 0) {
         let closest = null, minDist = w.blaster.evolved ? 600 : 400;
         for (const e of state.enemies) { const d = Math.hypot(e.x - p.x, e.y - p.y); if (d < minDist) { minDist = d; closest = e; } }
         if (closest) {
             const angle = Math.atan2(closest.y - p.y, closest.x - p.x);
-            if (w.blaster.evolved) { state.projectiles.push(new Projectile(p.x, p.y, Math.cos(angle)*15, Math.sin(angle)*15, 50, '#ff0055', 50, 6, true)); w.blaster.cd = 5; }
-            else { state.projectiles.push(new Projectile(p.x, p.y, Math.cos(angle)*10, Math.sin(angle)*10, 30+(w.blaster.level*5), '#ffff00', 40, 4, false)); w.blaster.cd = Math.max(10, (40-(w.blaster.level*4))*cdReduc); }
+            const shotCount = 1 + extraProj;
+            
+            for(let i=0; i<shotCount; i++) {
+                const spread = shotCount > 1 ? (i - (shotCount-1)/2) * 0.2 : 0;
+                if (w.blaster.evolved) { 
+                    state.projectiles.push(new Projectile(p.x, p.y, Math.cos(angle + spread)*15*projSpeedMult, Math.sin(angle + spread)*15*projSpeedMult, 50, '#ff0055', 50, 6, true)); 
+                } else { 
+                    state.projectiles.push(new Projectile(p.x, p.y, Math.cos(angle + spread)*10*projSpeedMult, Math.sin(angle + spread)*10*projSpeedMult, 30+(w.blaster.level*5), '#ffff00', 40, 4, false)); 
+                }
+            }
+            w.blaster.cd = w.blaster.evolved ? 5 : Math.max(10, (40-(w.blaster.level*4))*cdReduc); 
         }
     } else w.blaster.cd--;
+
     if (w.orbit.level > 0) {
-        w.orbit.angle += 0.05; const count = w.orbit.level + (saveData.artifacts.cube ? 1 : 0);
+        w.orbit.angle += 0.05; const count = w.orbit.level + (saveData.artifacts.cube ? 1 : 0) + extraProj;
         for(let i=0; i<count; i++) {
-            const theta = w.orbit.angle + (Math.PI*2*i/count); const ox = p.x + Math.cos(theta)*70, oy = p.y + Math.sin(theta)*70;
-            state.particles.push(new Particle(ox, oy, '#33ccff', 1, 5));
-            for(const e of state.enemies) if(Math.hypot(e.x - ox, e.y - oy) < 15 && e.takeDamage(15)) removeEnemy(e);
+            const theta = w.orbit.angle + (Math.PI*2*i/count); 
+            const ox = p.x + Math.cos(theta)*70*sizeMult, oy = p.y + Math.sin(theta)*70*sizeMult;
+            state.particles.push(new Particle(ox, oy, '#33ccff', 1, 5, 3 * sizeMult));
+            for(const e of state.enemies) if(Math.hypot(e.x - ox, e.y - oy) < 15 * sizeMult && e.takeDamage(15)) removeEnemy(e);
         }
     }
+
     if (w.field.level > 0) {
         if (w.field.cd <= 0) {
-            createExplosion(p.x, p.y, 'rgba(0,255,100,0.2)', 5);
-            for(const e of state.enemies) if(Math.hypot(e.x - p.x, e.y - p.y) < w.field.radius + (w.field.level*10) && e.takeDamage(5+w.field.level)) removeEnemy(e);
+            createExplosion(p.x, p.y, 'rgba(0,255,100,0.2)', 5, 10*sizeMult);
+            const range = (w.field.radius + (w.field.level*10)) * sizeMult;
+            for(const e of state.enemies) if(Math.hypot(e.x - p.x, e.y - p.y) < range && e.takeDamage(5+w.field.level)) removeEnemy(e);
             w.field.cd = 30 * cdReduc;
         } else w.field.cd--;
     }
-    if (w.tesla.level > 0) { if (w.tesla.cd <= 0) { let target = null; for(const e of state.enemies) if(Math.hypot(e.x - p.x, e.y - p.y) < 250) { target = e; break; } if(target) { fireTesla(target, 3+w.tesla.level, 20+w.tesla.level*5); w.tesla.cd = (120-(w.tesla.level*5)) * cdReduc; } } else w.tesla.cd--; }
-    if (w.missile.level > 0) { if (w.missile.cd <= 0) { state.projectiles.push(new Projectile(p.x, p.y, (Math.random()-0.5)*5, (Math.random()-0.5)*5, 40+w.missile.level*10, '#ffaa00', 150, 8, false)); w.missile.cd = (80 - w.missile.level*5) * cdReduc; } else w.missile.cd--; }
+
+    if (w.tesla.level > 0) { if (w.tesla.cd <= 0) { let target = null; for(const e of state.enemies) if(Math.hypot(e.x - p.x, e.y - p.y) < 250) { target = e; break; } if(target) { fireTesla(target, 3+w.tesla.level+extraProj, 20+w.tesla.level*5); w.tesla.cd = (120-(w.tesla.level*5)) * cdReduc; } } else w.tesla.cd--; }
+    
+    if (w.missile.level > 0) { 
+        if (w.missile.cd <= 0) { 
+            const count = 1 + Math.floor(extraProj/2);
+            for(let i=0; i<count; i++) {
+                state.projectiles.push(new Projectile(p.x, p.y, (Math.random()-0.5)*5, (Math.random()-0.5)*5, 40+w.missile.level*10, '#ffaa00', 150, 8, false)); 
+            }
+            w.missile.cd = (80 - w.missile.level*5) * cdReduc; 
+        } else w.missile.cd--; 
+    }
+
     if (w.gravity.level > 0) { if(w.gravity.cd <= 0) { spawnGravityWell(p.x, p.y, w.gravity.level); w.gravity.cd = (300 - w.gravity.level*10) * cdReduc; } else w.gravity.cd--; }
+    
     if (!state.ult.ready) { state.ult.cd++; if (state.ult.cd >= state.ult.maxCd) { state.ult.ready = true; if(forceUpdateHUD) forceUpdateHUD(); } }
 }
 
@@ -530,6 +633,9 @@ function showUpgradeScreen() {
 
 function selectUpgrade(id: string) {
     if (id === 'heal') state.player.hp = Math.min(state.player.hp + state.player.maxHp * 0.3, state.player.maxHp);
+    else if (id === 'giant') { state.sessionStats.sizeMult += 0.15; createPopup("BIGGER!", state.player.x, state.player.y, '#0ff'); }
+    else if (id === 'multishot') { state.sessionStats.projectileCount += 1; createPopup("MULTI!", state.player.x, state.player.y, '#ff0'); }
+    else if (id === 'sniper') { state.sessionStats.projectileSpeed += 0.2; createPopup("FASTER!", state.player.x, state.player.y, '#f0f'); }
     else if (id === 'evolution') { state.weapons.blaster.evolved = true; createPopup("EVOLUTION!", state.player.x, state.player.y, '#ff0099'); }
     else state.weapons[id].level++;
     setShowUpgradeScreen(false);
@@ -706,7 +812,8 @@ export default function Game() {
                 for (let i = state.items.length - 1; i >= 0; i--) if (state.items[i].update(state.player)) state.items.splice(i, 1);
                 for (let i = state.particles.length - 1; i >= 0; i--) if (state.particles[i].update()) state.particles.splice(i, 1);
                 for (let i = state.popups.length - 1; i >= 0; i--) if (state.popups[i].update()) state.popups.splice(i, 1);
-                
+                for (let i = state.shockwaves.length - 1; i >= 0; i--) if (state.shockwaves[i].update()) state.shockwaves.splice(i, 1);
+
                 state.time++; 
                 
                 // Update HUD State less frequently
@@ -755,6 +862,10 @@ export default function Game() {
                 state.projectiles.forEach((p: any) => p.draw(ctx)); 
                 state.particles.forEach((p: any) => p.draw(ctx)); 
                 state.popups.forEach((p: any) => p.draw(ctx)); 
+                
+                // Shockwaves are drawn last for effect
+                state.shockwaves.forEach((s: any) => s.draw(ctx));
+                
                 ctx.restore();
             }
 
@@ -865,8 +976,10 @@ export default function Game() {
         state.running = true; state.paused = false; state.gameOver = false; 
         state.time = 0; state.score = 0; state.kills = 0; state.coins = 0; state.level = 1; state.xp = 0; state.nextLevelXp = 10;
         state.weapons = { blaster: { level: 1, cd: 0, maxCd: 40, evolved: false }, orbit: { level: 0, cd: 0, angle: 0, count: 1 }, field: { level: 0, cd: 0, radius: 80 }, tesla: { level: 0, cd: 0, maxCd: 120 }, missile: { level: 0, cd: 0, maxCd: 80 }, gravity: { level: 0, cd: 0, maxCd: 300 } };
+        // Reset session stats
+        state.sessionStats = { sizeMult: 1, projectileCount: 0, projectileSpeed: 1 };
         state.ult = { ready: true, charge: 100, cd: 0, maxCd: 1800 };
-        state.player = new Player(); state.enemies = []; state.items = []; state.particles = []; state.projectiles = []; state.popups = []; state.gravityWells = []; state.boss = null;
+        state.player = new Player(); state.enemies = []; state.items = []; state.particles = []; state.projectiles = []; state.popups = []; state.gravityWells = []; state.boss = null; state.shockwaves = [];
         state.keys = { w: false, a: false, s: false, d: false, space: false };
         setHudState({ hp: 100, xp: 0, level: 1, kills: 0, coins: 0, time: '00:00', bossHp: 100, ultReady: true });
     };
@@ -879,10 +992,23 @@ export default function Game() {
     const useUltimate = () => {
         if (!state.ult.ready) return; 
         state.ult.ready = false; state.ult.cd = 0; 
-        createExplosion(state.player.x, state.player.y, '#fff', 100); 
+        
+        // Bigger visual effect
+        createExplosion(state.player.x, state.player.y, '#fff', 100, 5); 
+        createExplosion(state.player.x, state.player.y, '#ff0099', 100, 8); 
+        createExplosion(state.player.x, state.player.y, '#gold', 100, 3);
+        
+        // Add Shockwave
+        state.shockwaves.push(new Shockwave(state.player.x, state.player.y, 1500, '#fff'));
+        state.shockwaves.push(new Shockwave(state.player.x, state.player.y, 1200, '#ff0099'));
+        
+        // Strong screen shake
+        document.body.style.transform = `translate(${Math.random()*20-10}px, ${Math.random()*20-10}px) scale(1.02)`;
+        setTimeout(() => document.body.style.transform = 'none', 200);
+
         for(let i=state.enemies.length-1; i>=0; i--) { 
             const e = state.enemies[i]; 
-            if (e instanceof Boss) e.takeDamage(1000); 
+            if (e instanceof Boss) e.takeDamage(2000); 
             else { e.die(); state.enemies.splice(i, 1); } 
         }
         setHudState(prev => ({...prev, ultReady: false}));
@@ -1064,11 +1190,17 @@ export default function Game() {
                     <h1 className="screen-title">LABORATORY</h1>
                     <p className="screen-subtitle">기본 능력치 영구 강화</p>
                     <div className="list-layout">
-                        {['damage','health','speed','greed','cooldown','magnet','crit','regen','revive'].map(id => {
+                        {['damage','health','speed','greed','cooldown','magnet','crit','regen','revive','luck','evasion','xp','duration'].map(id => {
                             const lvl = saveData.upgrades[id] || 0;
                             const cost = id === 'revive' ? 5000 * (lvl+1) : SHOP_BASE_COST * (lvl + 1);
-                            const nameMap:any = { damage: '기초 공격학', health: '체력 단련', speed: '기동성 훈련', greed: '탐욕의 시선', cooldown: '속사 모듈', magnet: '자기장 확장', crit: '정밀 타격', regen: '나노봇', revive: '부활 프로토콜' };
-                            const descMap:any = { damage: '공격력 +10%', health: '체력 +10', speed: '이속 +5%', greed: '골드 +10%', cooldown: '쿨타임 -5%', magnet: '범위 +30', crit: '치명타 +5%', regen: '초당 회복', revive: '부활 +1회' };
+                            const nameMap:any = { 
+                                damage: '기초 공격학', health: '체력 단련', speed: '기동성 훈련', greed: '탐욕의 시선', cooldown: '속사 모듈', magnet: '자기장 확장', crit: '정밀 타격', regen: '나노봇', revive: '부활 프로토콜',
+                                luck: '행운', evasion: '회피 기동', xp: '고속 학습', duration: '지속성 강화'
+                            };
+                            const descMap:any = { 
+                                damage: '공격력 +10%', health: '체력 +10', speed: '이속 +5%', greed: '골드 +10%', cooldown: '쿨타임 -5%', magnet: '범위 +30', crit: '치명타 +5%', regen: '초당 회복', revive: '부활 +1회',
+                                luck: '좋은 드랍/크리 확률', evasion: '5% 확률 회피', xp: '경험치 +10%', duration: '효과 지속 +10%'
+                            };
                             return (
                                 <div key={id} className="shop-item">
                                     <h3>{nameMap[id]} (Lv.{lvl})</h3>
