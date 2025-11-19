@@ -234,12 +234,25 @@ class Player {
             if(this.dashTime % 3 === 0) state.particles.push(new Particle(this.x, this.y, '#00ffcc', 10, 10));
         } else {
             let dx = 0, dy = 0;
-            if (state.joystick.active) { dx = state.joystick.dx; dy = state.joystick.dy; }
-            else {
-                if (state.keys.w) dy -= 1; if (state.keys.s) dy += 1;
-                if (state.keys.a) dx -= 1; if (state.keys.d) dx += 1;
-                if (dx !== 0 || dy !== 0) { const len = Math.sqrt(dx*dx + dy*dy); dx /= len; dy /= len; }
+            
+            // Joystick
+            if (state.joystick.active) { 
+                dx += state.joystick.dx; 
+                dy += state.joystick.dy; 
             }
+            
+            // WASD / Arrows
+            if (state.keys.w) dy -= 1; 
+            if (state.keys.s) dy += 1;
+            if (state.keys.a) dx -= 1; 
+            if (state.keys.d) dx += 1;
+
+            // Normalize
+            if (dx !== 0 || dy !== 0) { 
+                const len = Math.sqrt(dx*dx + dy*dy); 
+                if(len > 1) { dx /= len; dy /= len; }
+            }
+            
             if (dx !== 0 || dy !== 0) { this.x += dx * this.speed; this.y += dy * this.speed; }
         }
         if (this.dashCd > 0) this.dashCd--;
@@ -569,9 +582,13 @@ export default function Game() {
         
         // Check active session
         const checkSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-                loginUser(session.user.id);
+            try {
+                const { data: { session }, error } = await supabase.auth.getSession();
+                if (session) {
+                    loginUser(session.user.id);
+                }
+            } catch(e) {
+                console.log("Session check skipped or failed (build mode?)");
             }
         };
         checkSession();
