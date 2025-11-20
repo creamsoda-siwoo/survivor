@@ -52,15 +52,6 @@ const UPGRADES = [
     { id: 'sniper', name: '스나이퍼', desc: '투사체 속도/관통력 증가', type: 'STAT', icon: '🎯' }
 ];
 
-const ACHIEVEMENT_LIST = [
-    { id: 'novice_killer', name: '신병', desc: '적 1000마리 처치', target: { type: 'kills', val: 1000 }, reward: 500 },
-    { id: 'veteran', name: '베테랑', desc: '적 10000마리 처치', target: { type: 'kills', val: 10000 }, reward: 2000 },
-    { id: 'slayer', name: '학살자', desc: '적 50000마리 처치', target: { type: 'kills', val: 50000 }, reward: 5000 },
-    { id: 'survivor_10', name: '생존자', desc: '총 10분 생존', target: { type: 'time', val: 600 }, reward: 500 },
-    { id: 'survivor_60', name: '마스터', desc: '총 60분 생존', target: { type: 'time', val: 3600 }, reward: 3000 },
-    { id: 'rich', name: '부자', desc: '누적 코인 10000', target: { type: 'coins', val: 10000 }, reward: 1000 }
-];
-
 // --- Game Engine State Container ---
 let saveData: any = null;
 let currentUserId: string = 'guest'; 
@@ -166,7 +157,7 @@ class Shockwave {
         this.x = x; this.y = y; this.r = 10; this.maxR = maxR; this.color = color; this.alpha = 1;
     }
     update() {
-        this.r += 30; // Expansion speed
+        this.r += 40; // Faster expansion
         this.alpha -= 0.02;
         return this.alpha <= 0;
     }
@@ -175,7 +166,7 @@ class Shockwave {
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
         ctx.strokeStyle = this.color;
-        ctx.lineWidth = 10;
+        ctx.lineWidth = 15;
         ctx.globalAlpha = this.alpha;
         ctx.stroke();
         ctx.restore();
@@ -189,7 +180,6 @@ class Item {
     x: number; y: number; val: number; size: number; type: string; isCoin: boolean; color: string;
     constructor(x: number, y: number, val: number, type = 'XP') {
         this.x = x; this.y = y; this.val = val; this.size = 5; this.type = type; this.isCoin = false;
-        // Luck affects coin value
         const luckMult = 1 + ((saveData.upgrades.luck || 0) * 0.1);
         
         if (type === 'HEAL') { this.color = '#ff0055'; this.size = 8; }
@@ -232,7 +222,7 @@ class Projectile {
     constructor(x: number, y: number, vx: number, vy: number, dmg: number, color: string, duration: number, size=4, pierce=false) { 
         this.x = x; this.y = y; this.vx = vx; this.vy = vy; this.dmg = dmg; this.color = color; 
         this.duration = duration * (1 + (saveData.upgrades.duration || 0) * 0.1); 
-        this.size = size * state.sessionStats.sizeMult; // Apply Giant size
+        this.size = size * state.sessionStats.sizeMult;
         this.pierce = pierce; this.hitList = []; 
     }
     update() { this.x += this.vx; this.y += this.vy; this.duration--; return this.duration <= 0; }
@@ -253,7 +243,7 @@ class Player {
         const shopHp = saveData.upgrades.health * 10;
         const shopSpd = saveData.upgrades.speed * 0.05;
         const shopCd = (saveData.upgrades.cooldown || 0) * 0.05;
-        const shopCrit = (saveData.upgrades.crit || 0) * 0.05 + (saveData.upgrades.luck || 0) * 0.02; // Luck adds small crit
+        const shopCrit = (saveData.upgrades.crit || 0) * 0.05 + (saveData.upgrades.luck || 0) * 0.02;
         const shopRegen = (saveData.upgrades.regen || 0) * 1;
         const shopRevive = (saveData.upgrades.revive || 0);
         const shopEvasion = (saveData.upgrades.evasion || 0) * 0.05;
@@ -280,7 +270,6 @@ class Player {
     }
 
     update() {
-        // Regen
         if (this.regenRate > 0 && state.time % 180 === 0 && this.hp < this.maxHp) {
             this.hp = Math.min(this.hp + this.regenRate, this.maxHp);
             createPopup('+', this.x, this.y - 20, '#0f0');
@@ -292,20 +281,14 @@ class Player {
             if(this.dashTime % 3 === 0) state.particles.push(new Particle(this.x, this.y, '#00ffcc', 10, 10));
         } else {
             let dx = 0, dy = 0;
+            if (state.joystick.active) { dx += state.joystick.dx; dy += state.joystick.dy; }
             
-            // Joystick
-            if (state.joystick.active) { 
-                dx += state.joystick.dx; 
-                dy += state.joystick.dy; 
-            }
-            
-            // WASD / Arrows
-            if (state.keys.w) dy -= 1; 
-            if (state.keys.s) dy += 1;
-            if (state.keys.a) dx -= 1; 
-            if (state.keys.d) dx += 1;
+            // Arrow Keys and WASD Support
+            if (state.keys.w || state.keys.ArrowUp) dy -= 1; 
+            if (state.keys.s || state.keys.ArrowDown) dy += 1;
+            if (state.keys.a || state.keys.ArrowLeft) dx -= 1; 
+            if (state.keys.d || state.keys.ArrowRight) dx += 1;
 
-            // Normalize
             if (dx !== 0 || dy !== 0) { 
                 const len = Math.sqrt(dx*dx + dy*dy); 
                 if(len > 1) { dx /= len; dy /= len; }
@@ -321,10 +304,13 @@ class Player {
         if (this.dashCd > 0) return;
         let dx = 0, dy = 0;
         if (state.joystick.active) { dx = state.joystick.dx; dy = state.joystick.dy; } 
-        else if (state.keys.w || state.keys.a || state.keys.s || state.keys.d) {
-            if (state.keys.w) dy -= 1; if (state.keys.s) dy += 1;
-            if (state.keys.a) dx -= 1; if (state.keys.d) dx += 1;
-            const len = Math.sqrt(dx*dx + dy*dy); dx /= len; dy /= len;
+        else if (state.keys.w || state.keys.a || state.keys.s || state.keys.d || state.keys.ArrowUp || state.keys.ArrowDown || state.keys.ArrowLeft || state.keys.ArrowRight) {
+            if (state.keys.w || state.keys.ArrowUp) dy -= 1; 
+            if (state.keys.s || state.keys.ArrowDown) dy += 1;
+            if (state.keys.a || state.keys.ArrowLeft) dx -= 1; 
+            if (state.keys.d || state.keys.ArrowRight) dx += 1;
+            const len = Math.sqrt(dx*dx + dy*dy); 
+            if (len > 0) { dx /= len; dy /= len; }
         } else dx = 1;
 
         this.dashVec = {x: dx, y: dy};
@@ -335,7 +321,6 @@ class Player {
     takeDamage(amt: number) {
         if (this.dashTime > 0 || this.invuln > 0) return;
         
-        // Evasion check
         if (Math.random() < this.evasion) {
             createPopup("MISS", this.x, this.y - 30, '#aaa');
             return;
@@ -425,9 +410,7 @@ class Enemy {
         else if (type === 'RHOMBUS') { this.hp = 15*scaler; this.speed = 4.0; this.size = 14; this.color = '#00ccff'; this.dmg = 15; }
         else if (type === 'OCTAGON') { this.hp = 80*scaler; this.speed = 0.8; this.size = 30; this.color = '#9900ff'; this.dmg = 30; }
         else if (type === 'SWARM') { this.hp = 2*scaler; this.speed = 3.0; this.size = 8; this.color = '#bc13fe'; this.dmg = 5; }
-        else { // Default
-            this.hp = 10; this.speed = 1; this.size = 10; this.color = '#fff'; this.dmg = 5;
-        }
+        else { this.hp = 10; this.speed = 1; this.size = 10; this.color = '#fff'; this.dmg = 5; }
         if (saveData.artifacts.watch) this.speed *= 0.9;
         this.maxHp = this.hp;
     }
@@ -441,12 +424,8 @@ class Enemy {
     takeDamage(amt: number) {
         if(saveData.artifacts.axe) { const hpPct = state.player.hp / state.player.maxHp; if(hpPct < 0.5) amt *= 1.5; if(hpPct < 0.2) amt *= 2.0; }
         
-        // Crit
         let isCrit = false;
-        if (Math.random() < state.player.critChance) {
-            amt *= 2;
-            isCrit = true;
-        }
+        if (Math.random() < state.player.critChance) { amt *= 2; isCrit = true; }
 
         amt *= state.player.dmgMult; 
         this.hp -= amt; 
@@ -459,8 +438,6 @@ class Enemy {
         createExplosion(this.x, this.y, this.color, 8); 
         if(saveData.artifacts.fang && Math.random() < 0.1) { state.player.hp = Math.min(state.player.hp + 1, state.player.maxHp); createPopup("+1", state.player.x, state.player.y, '#0f0'); }
         const rand = Math.random();
-        
-        // Luck affects drop rates
         const luck = saveData.upgrades.luck || 0;
         if (rand < 0.005 * (1+luck*0.2)) state.items.push(new Item(this.x, this.y, 0, 'BOMB'));
         else if (rand < 0.01 * (1+luck*0.2)) state.items.push(new Item(this.x, this.y, 0, 'MAGNET'));
@@ -523,8 +500,6 @@ function spawnGravityWell(x: number, y: number, level: number) { state.gravityWe
 
 function updateWeapons() {
     const p = state.player, w = state.weapons; let cdReduc = 1 - p.cdReduc;
-    
-    // Stats applied to weapons
     const sizeMult = state.sessionStats.sizeMult;
     const projSpeedMult = state.sessionStats.projectileSpeed;
     const extraProj = state.sessionStats.projectileCount;
@@ -535,7 +510,6 @@ function updateWeapons() {
         if (closest) {
             const angle = Math.atan2(closest.y - p.y, closest.x - p.x);
             const shotCount = 1 + extraProj;
-            
             for(let i=0; i<shotCount; i++) {
                 const spread = shotCount > 1 ? (i - (shotCount-1)/2) * 0.2 : 0;
                 if (w.blaster.evolved) { 
@@ -602,11 +576,12 @@ function endGame() {
 
 function showUpgradeScreen() {
     state.paused = true;
+    setShowUpgradeScreen(true);
     const cards: React.ReactNode[] = [];
-    
+
     if (state.weapons.blaster.level === 5 && !state.weapons.blaster.evolved) {
         cards.push(
-            <div key="evolution" className="card evolution" onClick={() => selectUpgrade('evolution')}>
+            <div key="evo" className="card evolution" onClick={() => selectUpgrade('evolution')}>
                 <div className="card-icon">👹</div>
                 <div className="card-title">엑스터미네이터</div>
                 <div className="card-desc">블래스터 진화: 고출력 관통 레이저 난사</div>
@@ -616,7 +591,7 @@ function showUpgradeScreen() {
     } else {
         for(let i=0; i<3; i++) {
             const u = UPGRADES[Math.floor(Math.random() * UPGRADES.length)];
-            let lvlInfo = u.type === 'WEAPON' ? `(Lv.${state.weapons[u.id].level})` : '';
+            let lvlInfo = u.type === 'WEAPON' ? `(Lv.${state.weapons[u.id]?.level || 0})` : '';
             cards.push(
                 <div key={i} className="card" onClick={() => selectUpgrade(u.id)}>
                     <div className="card-icon">{u.icon}</div>
@@ -628,224 +603,174 @@ function showUpgradeScreen() {
         }
     }
     setUpgradeCards(cards);
-    setShowUpgradeScreen(true);
 }
 
 function selectUpgrade(id: string) {
     if (id === 'heal') state.player.hp = Math.min(state.player.hp + state.player.maxHp * 0.3, state.player.maxHp);
-    else if (id === 'giant') { state.sessionStats.sizeMult += 0.15; createPopup("BIGGER!", state.player.x, state.player.y, '#0ff'); }
-    else if (id === 'multishot') { state.sessionStats.projectileCount += 1; createPopup("MULTI!", state.player.x, state.player.y, '#ff0'); }
-    else if (id === 'sniper') { state.sessionStats.projectileSpeed += 0.2; createPopup("FASTER!", state.player.x, state.player.y, '#f0f'); }
+    else if (id === 'giant') state.sessionStats.sizeMult += 0.15;
+    else if (id === 'multishot') state.sessionStats.projectileCount += 1;
+    else if (id === 'sniper') state.sessionStats.projectileSpeed += 0.2;
     else if (id === 'evolution') { state.weapons.blaster.evolved = true; createPopup("EVOLUTION!", state.player.x, state.player.y, '#ff0099'); }
-    else state.weapons[id].level++;
-    setShowUpgradeScreen(false);
+    else if (state.weapons[id]) state.weapons[id].level++;
+    
     state.paused = false;
+    setShowUpgradeScreen(false);
 }
 
+// --- React Component ---
 
 export default function Game() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const joystickZoneRef = useRef<HTMLDivElement>(null);
-    const joystickBaseRef = useRef<HTMLDivElement>(null);
-    const joystickKnobRef = useRef<HTMLDivElement>(null);
-
-    // React UI State
-    const [showAuth, setShowAuth] = useState(true); // Auth Screen
-    const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [authError, setAuthError] = useState('');
-    const [currentUser, setCurrentUser] = useState<string | null>(null);
-
-    const [showStart, setShowStart] = useState(false);
-    const [showShop, setShowShop] = useState(false);
-    const [showArmory, setShowArmory] = useState(false);
-    const [showClass, setShowClass] = useState(false);
-    const [showWardrobe, setShowWardrobe] = useState(false);
-    const [showGacha, setShowGacha] = useState(false);
-    const [showSettings, setShowSettings] = useState(false);
-    const [showAchievement, setShowAchievement] = useState(false);
-    const [showPause, setShowPause] = useState(false);
+    const [showStart, setShowStart] = useState(true);
     const [showGameOver, setShowGameOver] = useState(false);
     const [showUpgrade, setShowUpgrade] = useState(false);
-    const [isBossActive, setIsBossActive] = useState(false);
+    const [upgradeCardList, setUpgradeCardList] = useState<React.ReactNode[]>([]);
     
-    const [uiCoins, setUiCoins] = useState(0);
-    const [upgradeCardsList, setUpgradeCardsList] = useState<React.ReactNode[]>([]);
-    const [gachaRes, setGachaRes] = useState({visible: false, icon: '', name: '', desc: ''});
-    const [hudState, setHudState] = useState({ hp: 100, xp: 0, level: 1, kills: 0, coins: 0, time: '00:00', bossHp: 100, ultReady: true });
-    const [renderTrigger, setRenderTrigger] = useState(0); // To force re-render lists
+    const [hudStats, setHudStats] = useState({ level: 1, kills: 0, coins: 0, time: "00:00", hp: 100, maxHp: 100, xp: 0, nextXp: 10, ultReady: true, ultCd: 0 });
+    const [showBossHud, setShowBossHud] = useState(false);
+    const [bossHp, setBossHp] = useState(100);
+    
+    // Menu States
+    const [menuState, setMenuState] = useState<'none'|'shop'|'armory'|'wardrobe'|'gacha'|'settings'|'class'>('none');
+    const [authMode, setAuthMode] = useState(true);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
 
-    // Bind global setters
+    // Assign control functions
     useEffect(() => {
         setShowUpgradeScreen = setShowUpgrade;
         setShowGameOverScreen = setShowGameOver;
         setShowStartScreen = setShowStart;
-        setBossHudActive = setIsBossActive;
-        setUpgradeCards = setUpgradeCardsList;
-        setGachaResult = setGachaRes;
-        forceUpdateHUD = () => setHudState(prev => ({...prev}));
+        setUpgradeCards = setUpgradeCardList;
+        setBossHudActive = setShowBossHud;
+        forceUpdateHUD = () => {}; 
         
-        // Check active session
-        const checkSession = async () => {
-            try {
-                const { data: { session }, error } = await supabase.auth.getSession();
-                if (session) {
-                    loginUser(session.user.id);
-                }
-            } catch(e) {
-                console.log("Session check skipped or failed (build mode?)");
-            }
-        };
-        checkSession();
-
+        // Load initial data
+        loadSaveData('guest');
     }, []);
 
-    // --- Authentication Handlers ---
+    // Auth
     const handleLogin = async () => {
-        if(!email || !password) { setAuthError("이메일과 비밀번호를 입력하세요."); return; }
-        setAuthError('');
-        
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
-
-        if (error) {
-            setAuthError(error.message);
-        } else if (data.user) {
-            loginUser(data.user.id);
+        if (!email || !password) return alert('이메일과 비밀번호를 입력하세요.');
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) alert(error.message);
+        else {
+            alert('로그인 성공!');
+            loadSaveData(data.user.id);
+            setAuthMode(false);
         }
     };
-
-    const handleSignup = async () => {
-        if(!email || !password) { setAuthError("이메일과 비밀번호를 입력하세요."); return; }
-        setAuthError('');
-        
-        const { data, error } = await supabase.auth.signUp({
-            email,
-            password,
-        });
-
-        if (error) {
-            setAuthError(error.message);
-        } else {
-            alert("회원가입 성공! 로그인 해주세요.");
-            setAuthMode('login');
-        }
+    const handleSignUp = async () => {
+        if (!email || !password) return alert('이메일과 비밀번호를 입력하세요.');
+        const { data, error } = await supabase.auth.signUp({ email, password });
+        if (error) alert(error.message);
+        else alert('가입 성공! 이메일을 확인해주세요.');
     };
 
-    const handleGuestLogin = () => {
-        loginUser('guest');
-    };
+    // HUD Update Loop
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (state.running && !state.paused && state.player) {
+                const m = Math.floor(state.time / 3600);
+                const s = Math.floor((state.time % 3600) / 60);
+                setHudStats({
+                    level: state.level,
+                    kills: state.kills,
+                    coins: state.coins,
+                    time: `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`,
+                    hp: state.player.hp,
+                    maxHp: state.player.maxHp,
+                    xp: state.xp,
+                    nextXp: state.nextLevelXp,
+                    ultReady: state.ult.ready,
+                    ultCd: state.ult.cd / state.ult.maxCd
+                });
+                if (state.boss) setBossHp((state.boss.hp / state.boss.maxHp) * 100);
+            }
+        }, 100);
+        return () => clearInterval(interval);
+    }, []);
 
-    const loginUser = (userId: string) => {
-        setCurrentUser(userId);
-        loadSaveData(userId);
-        setUiCoins(saveData.coins);
-        setShowAuth(false);
-        setShowStart(true);
-        setAuthError('');
-        setEmail('');
-        setPassword('');
-    };
-
-    const handleLogout = async () => {
-        await supabase.auth.signOut();
-        setCurrentUser(null);
-        setShowSettings(false);
-        setShowStart(false);
-        setShowAuth(true);
-        setAuthMode('login');
-    };
-
-    // --- Core Game Loop ---
+    // Game Loop
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
-        const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+        window.addEventListener('resize', resize);
+        resize();
+
+        let animationFrameId: number;
 
         const loop = () => {
-            // If in auth screen, just render background
-            if (showAuth) {
-                ctx.fillStyle = '#050508'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-                requestAnimationFrame(loop);
-                return;
-            }
-
-            if (!state.running) {
-                // Render idle background animation if needed, or just static
-                if(!showStart) { 
-                   // Only run loop heavily when game is running
-                }
-                if(state.running === false && showStart === false && showAuth === false && showGameOver === false) {
-                   // Edge case transition
-                }
-            }
-
-            if (state.running && !state.paused) {
-                if (state.time % 60 === 0 && state.enemies.length < 300) spawnEnemy();
-                if (state.time === BOSS_SPAWN_TIME * 60 && !state.boss) spawnBoss();
-                
-                if(state.player) state.player.update();
-                
-                for (let i = state.enemies.length - 1; i >= 0; i--) state.enemies[i].update(state.player);
-                
-                for (let i = state.projectiles.length - 1; i >= 0; i--) { 
-                    const p = state.projectiles[i]; 
-                    if(p.update()) { state.projectiles.splice(i, 1); continue; } 
-                    let hit = false; 
-                    for (const e of state.enemies) { 
-                        if (p.pierce && p.hitList.includes(e)) continue; 
-                        if (Math.hypot(e.x - p.x, e.y - p.y) < e.size + p.size) { 
-                            if(e.takeDamage(p.dmg)) removeEnemy(e); 
-                            hit = true; createExplosion(p.x, p.y, p.color, 3); 
-                            if (!p.pierce) break; else p.hitList.push(e); 
+            if (state.running) {
+                if (!state.paused) {
+                    if (state.time % 60 === 0 && state.enemies.length < 300) spawnEnemy();
+                    if (state.time === BOSS_SPAWN_TIME * 60 && !state.boss) spawnBoss();
+                    
+                    if (state.player) state.player.update();
+                    
+                    // Update Enemies
+                    for (let i = state.enemies.length - 1; i >= 0; i--) state.enemies[i].update(state.player);
+                    
+                    // Update Projectiles
+                    for (let i = state.projectiles.length - 1; i >= 0; i--) { 
+                        const p = state.projectiles[i]; 
+                        if(p.update()) { state.projectiles.splice(i, 1); continue; } 
+                        let hit = false; 
+                        for (const e of state.enemies) { 
+                            if (p.pierce && p.hitList.includes(e)) continue; 
+                            if (Math.hypot(e.x - p.x, e.y - p.y) < e.size + p.size) { 
+                                if(e.takeDamage(p.dmg)) removeEnemy(e); 
+                                hit = true; 
+                                createExplosion(p.x, p.y, p.color, 3); 
+                                if (!p.pierce) break; 
+                                else p.hitList.push(e); 
+                            } 
                         } 
-                    } 
-                    if (hit && !p.pierce) state.projectiles.splice(i, 1); 
-                }
-                
-                updateWeapons(); 
-                updateGravityWells();
-                
-                for (let i = state.items.length - 1; i >= 0; i--) if (state.items[i].update(state.player)) state.items.splice(i, 1);
-                for (let i = state.particles.length - 1; i >= 0; i--) if (state.particles[i].update()) state.particles.splice(i, 1);
-                for (let i = state.popups.length - 1; i >= 0; i--) if (state.popups[i].update()) state.popups.splice(i, 1);
-                for (let i = state.shockwaves.length - 1; i >= 0; i--) if (state.shockwaves[i].update()) state.shockwaves.splice(i, 1);
+                        if (hit && !p.pierce) state.projectiles.splice(i, 1); 
+                    }
+                    
+                    updateWeapons(); 
+                    updateGravityWells();
+                    
+                    // Items
+                    for (let i = state.items.length - 1; i >= 0; i--) if (state.items[i].update(state.player)) state.items.splice(i, 1);
+                    // Particles
+                    for (let i = state.particles.length - 1; i >= 0; i--) if (state.particles[i].update()) state.particles.splice(i, 1);
+                    // Popups
+                    for (let i = state.popups.length - 1; i >= 0; i--) if (state.popups[i].update()) state.popups.splice(i, 1);
+                    // Shockwaves
+                    for (let i = state.shockwaves.length - 1; i >= 0; i--) if (state.shockwaves[i].update()) state.shockwaves.splice(i, 1);
 
-                state.time++; 
-                
-                // Update HUD State less frequently
-                if (state.time % 15 === 0) {
-                     const m = Math.floor(state.time / 3600).toString().padStart(2,'0');
-                     const s = Math.floor((state.time % 3600) / 60).toString().padStart(2,'0');
-                     setHudState({
-                         hp: (state.player.hp / state.player.maxHp) * 100,
-                         xp: (state.xp / state.nextLevelXp) * 100,
-                         level: state.level,
-                         kills: state.kills,
-                         coins: state.coins,
-                         time: `${m}:${s}`,
-                         bossHp: state.boss ? (state.boss.hp / state.boss.maxHp) * 100 : 0,
-                         ultReady: state.ult.ready
-                     });
+                    state.time++;
                 }
-            }
 
-            // Render
-            ctx.fillStyle = '#050508'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            if (state.running || (!showAuth && !showStart)) {
-                ctx.save(); 
-                const ZOOM = 0.75;
-                const cx = canvas.width / 2, cy = canvas.height / 2; 
-                ctx.translate(cx, cy); ctx.scale(ZOOM, ZOOM); 
-                if(state.player) ctx.translate(-state.player.x, -state.player.y);
+                // Render
+                ctx.fillStyle = '#050508'; 
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
                 
-                // Grid
-                if(state.player) {
-                    ctx.strokeStyle = 'rgba(50, 0, 100, 0.2)'; ctx.lineWidth = 2; 
+                if (state.player) {
+                    ctx.save(); 
+                    const ZOOM = 0.75;
+                    const cx = canvas.width / 2;
+                    const cy = canvas.height / 2; 
+                    
+                    // Screen Shake
+                    if (state.shockwaves.length > 0) {
+                        const shake = Math.random() * 10 - 5;
+                        ctx.translate(shake, shake);
+                    }
+
+                    ctx.translate(cx, cy); 
+                    ctx.scale(ZOOM, ZOOM); 
+                    ctx.translate(-state.player.x, -state.player.y);
+                    
+                    // Grid
+                    ctx.strokeStyle = 'rgba(50, 0, 100, 0.2)'; 
+                    ctx.lineWidth = 2; 
                     const gridSize = 100; 
                     const offX = Math.floor(state.player.x / gridSize) * gridSize;
                     const offY = Math.floor(state.player.y / gridSize) * gridSize;
@@ -853,309 +778,254 @@ export default function Game() {
                     for (let x = offX - 1000; x < offX + 1000; x += gridSize) { ctx.moveTo(x, offY - 1000); ctx.lineTo(x, offY + 1000); } 
                     for (let y = offY - 1000; y < offY + 1000; y += gridSize) { ctx.moveTo(offX - 1000, y); ctx.lineTo(offX + 1000, y); } 
                     ctx.stroke();
+                    
+                    state.items.forEach((i:any) => i.draw(ctx)); 
+                    state.gravityWells.forEach((g:any) => { ctx.beginPath(); ctx.arc(g.x, g.y, g.range, 0, Math.PI*2); ctx.strokeStyle='#6600cc'; ctx.stroke(); });
+                    state.enemies.forEach((e:any) => e.draw(ctx)); 
+                    state.player.draw(ctx); 
+                    state.projectiles.forEach((p:any) => p.draw(ctx)); 
+                    state.particles.forEach((p:any) => p.draw(ctx)); 
+                    state.popups.forEach((p:any) => p.draw(ctx)); 
+                    state.shockwaves.forEach((s:any) => s.draw(ctx));
+
+                    ctx.restore();
                 }
-
-                state.items.forEach((i: any) => i.draw(ctx)); 
-                state.gravityWells.forEach((g: any) => { ctx.beginPath(); ctx.arc(g.x, g.y, g.range, 0, Math.PI*2); ctx.strokeStyle='#6600cc'; ctx.stroke(); });
-                state.enemies.forEach((e: any) => e.draw(ctx)); 
-                if(state.player) state.player.draw(ctx); 
-                state.projectiles.forEach((p: any) => p.draw(ctx)); 
-                state.particles.forEach((p: any) => p.draw(ctx)); 
-                state.popups.forEach((p: any) => p.draw(ctx)); 
-                
-                // Shockwaves are drawn last for effect
-                state.shockwaves.forEach((s: any) => s.draw(ctx));
-                
-                ctx.restore();
             }
-
-            requestAnimationFrame(loop);
+            animationFrameId = requestAnimationFrame(loop);
         };
+        
+        loop();
+        return () => cancelAnimationFrame(animationFrameId);
+    }, []);
 
-        const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
-        window.addEventListener('resize', resize);
-        resize();
-        const raf = requestAnimationFrame(loop);
-
-        return () => {
-            window.removeEventListener('resize', resize);
-            cancelAnimationFrame(raf);
-        }
-    }, [showAuth, showStart]);
-
-    // --- Input Handling ---
+    // Input Handling
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            const target = e.target as HTMLElement;
-            if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
-
-            const code = e.code;
-            if(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(code)) {
-                // prevent scrolling
-                e.preventDefault();
-            }
-
-            if(code === 'Space') {
-                state.player?.dash();
-            } 
+            // Prevent typing in input fields from triggering game movement
+            if ((e.target as HTMLElement).tagName === 'INPUT') return;
             
-            if(code === 'KeyW' || code === 'ArrowUp') state.keys.w = true; 
-            if(code === 'KeyA' || code === 'ArrowLeft') state.keys.a = true; 
-            if(code === 'KeyS' || code === 'ArrowDown') state.keys.s = true; 
-            if(code === 'KeyD' || code === 'ArrowRight') state.keys.d = true;
+            if (e.code === 'Space') state.player?.dash();
+            if (e.key.toLowerCase() === 'w') state.keys.w = true;
+            if (e.key.toLowerCase() === 'a') state.keys.a = true;
+            if (e.key.toLowerCase() === 's') state.keys.s = true;
+            if (e.key.toLowerCase() === 'd') state.keys.d = true;
+            if (e.key === 'ArrowUp') state.keys.ArrowUp = true;
+            if (e.key === 'ArrowLeft') state.keys.ArrowLeft = true;
+            if (e.key === 'ArrowDown') state.keys.ArrowDown = true;
+            if (e.key === 'ArrowRight') state.keys.ArrowRight = true;
+            
+            // Prevent scrolling with keys
+            if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)) e.preventDefault();
         };
         const handleKeyUp = (e: KeyboardEvent) => {
-            const target = e.target as HTMLElement;
-            if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
-
-            const code = e.code;
-            if(code === 'KeyW' || code === 'ArrowUp') state.keys.w = false; 
-            if(code === 'KeyA' || code === 'ArrowLeft') state.keys.a = false; 
-            if(code === 'KeyS' || code === 'ArrowDown') state.keys.s = false; 
-            if(code === 'KeyD' || code === 'ArrowRight') state.keys.d = false;
+            if (e.key.toLowerCase() === 'w') state.keys.w = false;
+            if (e.key.toLowerCase() === 'a') state.keys.a = false;
+            if (e.key.toLowerCase() === 's') state.keys.s = false;
+            if (e.key.toLowerCase() === 'd') state.keys.d = false;
+            if (e.key === 'ArrowUp') state.keys.ArrowUp = false;
+            if (e.key === 'ArrowLeft') state.keys.ArrowLeft = false;
+            if (e.key === 'ArrowDown') state.keys.ArrowDown = false;
+            if (e.key === 'ArrowRight') state.keys.ArrowRight = false;
         };
         window.addEventListener('keydown', handleKeyDown);
         window.addEventListener('keyup', handleKeyUp);
-
-        // Joystick
-        const zone = joystickZoneRef.current;
-        if(!zone) return;
-
-        const handlePointerDown = (e: PointerEvent) => {
-            e.preventDefault(); 
-            state.pointer.down = true; state.pointer.id = e.pointerId; 
-            state.pointer.x = e.clientX; state.pointer.y = e.clientY;
-            state.joystick.active = true; state.joystick.originX = e.clientX; state.joystick.originY = e.clientY;
-            
-            if(joystickBaseRef.current && joystickKnobRef.current) {
-                joystickBaseRef.current.style.display = 'block'; joystickKnobRef.current.style.display = 'block';
-                joystickBaseRef.current.style.left = e.clientX + 'px'; joystickBaseRef.current.style.top = e.clientY + 'px';
-                joystickKnobRef.current.style.left = e.clientX + 'px'; joystickKnobRef.current.style.top = e.clientY + 'px';
-            }
-            const now = Date.now(); if (now - state.lastTap < 300) { if (state.player) state.player.dash(); } state.lastTap = now;
-        };
-
-        const handlePointerMove = (e: PointerEvent) => {
-            if (!state.pointer.down || e.pointerId !== state.pointer.id) return; 
-            e.preventDefault();
-            const maxDist = 60, dx = e.clientX - state.joystick.originX, dy = e.clientY - state.joystick.originY, dist = Math.sqrt(dx*dx + dy*dy);
-            let kx = dx, ky = dy; if (dist > maxDist) { kx = (dx / dist) * maxDist; ky = (dy / dist) * maxDist; }
-            
-            if(joystickKnobRef.current) {
-                joystickKnobRef.current.style.left = (state.joystick.originX + kx) + 'px'; 
-                joystickKnobRef.current.style.top = (state.joystick.originY + ky) + 'px';
-            }
-            state.joystick.dx = kx / maxDist; state.joystick.dy = ky / maxDist;
-        };
-
-        const handlePointerUp = (e: PointerEvent) => {
-            if (e.pointerId !== state.pointer.id) return; 
-            e.preventDefault(); 
-            state.pointer.down = false; state.joystick.active = false; state.joystick.dx = 0; state.joystick.dy = 0; 
-            if(joystickBaseRef.current && joystickKnobRef.current) {
-                joystickBaseRef.current.style.display = 'none'; joystickKnobRef.current.style.display = 'none';
-            }
-        };
-
-        zone.addEventListener('pointerdown', handlePointerDown);
-        window.addEventListener('pointermove', handlePointerMove);
-        window.addEventListener('pointerup', handlePointerUp);
-
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
             window.removeEventListener('keyup', handleKeyUp);
-            zone.removeEventListener('pointerdown', handlePointerDown);
-            window.removeEventListener('pointermove', handlePointerMove);
-            window.removeEventListener('pointerup', handlePointerUp);
-        }
+        };
     }, []);
 
-    // --- UI Actions ---
     const startGame = () => {
         setShowStart(false);
+        setShowGameOver(false);
         state.running = true; state.paused = false; state.gameOver = false; 
-        state.time = 0; state.score = 0; state.kills = 0; state.coins = 0; state.level = 1; state.xp = 0; state.nextLevelXp = 10;
-        state.weapons = { blaster: { level: 1, cd: 0, maxCd: 40, evolved: false }, orbit: { level: 0, cd: 0, angle: 0, count: 1 }, field: { level: 0, cd: 0, radius: 80 }, tesla: { level: 0, cd: 0, maxCd: 120 }, missile: { level: 0, cd: 0, maxCd: 80 }, gravity: { level: 0, cd: 0, maxCd: 300 } };
-        // Reset session stats
+        state.time = 0; state.score = 0; state.kills = 0; state.coins = 0; 
+        state.level = 1; state.xp = 0; state.nextLevelXp = 10;
+        state.weapons = { 
+            blaster: { level: 1, cd: 0, maxCd: 40, evolved: false }, 
+            orbit: { level: 0, cd: 0, angle: 0, count: 1 }, 
+            field: { level: 0, cd: 0, radius: 80 }, 
+            tesla: { level: 0, cd: 0, maxCd: 120 }, 
+            missile: { level: 0, cd: 0, maxCd: 80 }, 
+            gravity: { level: 0, cd: 0, maxCd: 300 } 
+        };
         state.sessionStats = { sizeMult: 1, projectileCount: 0, projectileSpeed: 1 };
         state.ult = { ready: true, charge: 100, cd: 0, maxCd: 1800 };
-        state.player = new Player(); state.enemies = []; state.items = []; state.particles = []; state.projectiles = []; state.popups = []; state.gravityWells = []; state.boss = null; state.shockwaves = [];
-        state.keys = { w: false, a: false, s: false, d: false, space: false };
-        setHudState({ hp: 100, xp: 0, level: 1, kills: 0, coins: 0, time: '00:00', bossHp: 100, ultReady: true });
+        state.player = new Player(); state.enemies = []; state.items = []; 
+        state.particles = []; state.projectiles = []; state.popups = []; state.shockwaves = [];
+        state.boss = null;
+        
+        // Clear keys on start to prevent stuck movement
+        state.keys = { w: false, a: false, s: false, d: false, space: false, ArrowUp: false, ArrowLeft: false, ArrowDown: false, ArrowRight: false };
     };
 
-    const togglePause = () => { if (!state.running) return; state.paused = !state.paused; setShowPause(state.paused); };
-    const quitGame = () => { saveData.coins += Math.floor(state.coins); save(); state.running = false; setShowPause(false); setShowStart(true); setUiCoins(saveData.coins); };
-    const restartGame = () => { setShowGameOver(false); startGame(); };
-    const backToMain = () => { setShowGameOver(false); setShowStart(true); setUiCoins(saveData.coins); };
-    
+    const togglePause = () => {
+        if (!state.running) return;
+        state.paused = !state.paused;
+    };
+
     const useUltimate = () => {
-        if (!state.ult.ready) return; 
-        state.ult.ready = false; state.ult.cd = 0; 
+        if (!state.ult.ready) return;
+        state.ult.ready = false;
+        state.ult.cd = 0;
         
-        // Bigger visual effect
-        createExplosion(state.player.x, state.player.y, '#fff', 100, 5); 
-        createExplosion(state.player.x, state.player.y, '#ff0099', 100, 8); 
-        createExplosion(state.player.x, state.player.y, '#gold', 100, 3);
+        // Visuals
+        createExplosion(state.player.x, state.player.y, '#ffd700', 100, 10); // Gold explosion
+        createExplosion(state.player.x, state.player.y, '#ff00ff', 50, 5); // Magenta accents
+        state.shockwaves.push(new Shockwave(state.player.x, state.player.y, 1500, '#ffd700'));
         
-        // Add Shockwave
-        state.shockwaves.push(new Shockwave(state.player.x, state.player.y, 1500, '#fff'));
-        state.shockwaves.push(new Shockwave(state.player.x, state.player.y, 1200, '#ff0099'));
-        
-        // Strong screen shake
-        document.body.style.transform = `translate(${Math.random()*20-10}px, ${Math.random()*20-10}px) scale(1.02)`;
-        setTimeout(() => document.body.style.transform = 'none', 200);
-
-        for(let i=state.enemies.length-1; i>=0; i--) { 
-            const e = state.enemies[i]; 
-            if (e instanceof Boss) e.takeDamage(2000); 
-            else { e.die(); state.enemies.splice(i, 1); } 
-        }
-        setHudState(prev => ({...prev, ultReady: false}));
-    };
-
-    // Sub-menu Handlers
-    const openShop = () => { setShowStart(false); setShowShop(true); setUiCoins(saveData.coins); };
-    const buyUpgrade = (id: string, cost: number) => { if (saveData.coins >= cost) { saveData.coins -= cost; saveData.upgrades[id]++; save(); setUiCoins(saveData.coins); setRenderTrigger(prev => prev+1); } else alert('코인이 부족합니다!'); };
-    
-    const openArmory = () => { setShowStart(false); setShowArmory(true); setUiCoins(saveData.coins); };
-    const upgradeEquipment = (id: string, cost: number) => { if(saveData.coins >= cost) { saveData.coins -= cost; saveData.equipment[id]++; save(); setUiCoins(saveData.coins); setRenderTrigger(prev => prev+1); } else alert('코인이 부족합니다!'); };
-    
-    const openClassScreen = () => { setShowStart(false); setShowClass(true); setUiCoins(saveData.coins); };
-    const buyClass = (id: string, cost: number) => { if(saveData.coins >= cost) { saveData.coins -= cost; saveData.ownedClasses.push(id); saveData.currentClass = id; save(); setUiCoins(saveData.coins); setRenderTrigger(prev => prev+1); } else alert("코인이 부족합니다!"); };
-    const selectClass = (id: string) => { saveData.currentClass = id; save(); setRenderTrigger(prev => prev+1); };
-
-    const openGacha = () => { setShowStart(false); setShowGacha(true); setUiCoins(saveData.coins); setGachaRes({visible:false, icon:'', name:'', desc:''}); };
-    const rollGacha = () => {
-        if(saveData.coins < GACHA_COST) { alert("코인이 부족합니다!"); return; }
-        saveData.coins -= GACHA_COST; setUiCoins(saveData.coins);
-        const art = ARTIFACTS[Math.floor(Math.random() * ARTIFACTS.length)];
-        if (!saveData.artifacts[art.id]) saveData.artifacts[art.id] = 0; saveData.artifacts[art.id]++; save();
-        setGachaRes({visible: true, icon: art.icon, name: art.name, desc: `${art.desc}\n(현재 Lv.${saveData.artifacts[art.id]})`});
-    };
-    const rollSkinGacha = () => {
-        if(saveData.coins < SKIN_COST) { alert("코인이 부족합니다!"); return; }
-        saveData.coins -= SKIN_COST; setUiCoins(saveData.coins);
-        const skin = SKINS[Math.floor(Math.random() * SKINS.length)];
-        if (saveData.ownedSkins.includes(skin.id)) {
-            const refund = Math.floor(SKIN_COST * 0.5); saveData.coins += refund; setUiCoins(saveData.coins);
-            setGachaRes({visible: true, icon: skin.icon, name: skin.name, desc: `이미 보유중입니다!\n${refund}🪙 환급됨.`});
-        } else {
-            saveData.ownedSkins.push(skin.id); save();
-            setGachaRes({visible: true, icon: skin.icon, name: skin.name, desc: "새로운 스킨 획득!"});
+        // Logic
+        for(let i=state.enemies.length-1; i>=0; i--) {
+            const e = state.enemies[i];
+            if (e instanceof Boss) e.takeDamage(1000);
+            else {
+                createExplosion(e.x, e.y, e.color, 5);
+                state.enemies.splice(i, 1);
+                state.kills++;
+            }
         }
     };
 
-    const openWardrobe = () => { setShowStart(false); setShowWardrobe(true); };
-    const selectSkin = (id: string) => { saveData.currentSkin = id; save(); setRenderTrigger(prev => prev+1); };
-
-    const openAchievement = () => { setShowStart(false); setShowAchievement(true); setUiCoins(saveData.coins); };
-    const claimAchievement = (id: string, reward: number) => {
-        if(saveData.achievements.includes(id)) return;
-        saveData.coins += reward; saveData.achievements.push(id); save(); setUiCoins(saveData.coins); setRenderTrigger(prev => prev+1);
+    // UI Rendering Helpers
+    const renderShop = () => {
+        const items = [
+            { id: 'damage', name: '기초 공격학', desc: '공격력 +10%' },
+            { id: 'health', name: '체력 단련', desc: '최대 체력 +10' },
+            { id: 'speed', name: '기동성 훈련', desc: '이동속도 +5%' },
+            { id: 'greed', name: '탐욕의 시선', desc: '골드 획득량 +10%' },
+            { id: 'cooldown', name: '빠른 장전', desc: '쿨타임 -5%' },
+            { id: 'crit', name: '치명타 연마', desc: '치명타 확률 +5%' },
+            { id: 'luck', name: '행운', desc: '좋은 아이템 확률 증가' },
+            { id: 'evasion', name: '회피술', desc: '회피율 +5%' },
+            { id: 'xp', name: '학습 능력', desc: '경험치 획득 +10%' },
+            { id: 'duration', name: '지속성', desc: '효과 지속시간 +10%' },
+            { id: 'regen', name: '자연 치유', desc: '3초마다 체력 1 회복' },
+            { id: 'revive', name: '불굴의 의지', desc: '사망 시 1회 부활' }
+        ];
+        return (
+            <div className="list-layout">
+                {items.map(item => {
+                    const lvl = saveData.upgrades[item.id] || 0;
+                    const cost = SHOP_BASE_COST * (lvl + 1) * (item.id === 'revive' ? 10 : 1); // Revive is expensive
+                    return (
+                        <div key={item.id} className="shop-item">
+                            <h3>{item.name} (Lv.{lvl})</h3>
+                            <p>{item.desc}</p>
+                            <button className="btn" onClick={() => {
+                                if (saveData.coins >= cost) {
+                                    saveData.coins -= cost;
+                                    saveData.upgrades[item.id] = (saveData.upgrades[item.id] || 0) + 1;
+                                    save();
+                                    setMenuState('shop'); // Force re-render
+                                } else alert('코인이 부족합니다!');
+                            }}>{cost} 🪙</button>
+                        </div>
+                    );
+                })}
+            </div>
+        );
     };
-
-    const openSettings = () => { setShowStart(false); setShowSettings(true); };
-    const resetData = () => { if(confirm("현재 계정의 데이터를 초기화하시겠습니까?")) { localStorage.removeItem(`ifko_save_v9_${currentUserId}`); window.location.reload(); } };
 
     return (
         <div id="game-container">
             <div id="credits">제작자: 한국인이라면</div>
             <div className="scanlines"></div>
             <div className="vignette"></div>
-            <canvas ref={canvasRef} />
+            <canvas ref={canvasRef} id="gameCanvas"></canvas>
 
             {/* Joystick UI */}
-            <div ref={joystickZoneRef} id="joystick-zone" className={`interactive ${!state.running || state.paused ? 'hidden' : ''}`}></div>
-            <div ref={joystickBaseRef} id="joystick-base"></div>
-            <div ref={joystickKnobRef} id="joystick-knob"></div>
-            {!showStart && !showAuth && <div id="dash-hint">화면 더블 탭 / 스페이스바 : 대시</div>}
+            {!showStart && !state.paused && (
+                <>
+                    <div id="joystick-zone" className="interactive"
+                        onPointerDown={(e) => {
+                            state.pointer.down = true; state.pointer.id = e.pointerId;
+                            state.joystick.active = true; state.joystick.originX = e.clientX; state.joystick.originY = e.clientY;
+                            const now = Date.now(); if (now - state.lastTap < 300 && state.player) state.player.dash();
+                            state.lastTap = now;
+                        }}
+                        onPointerMove={(e) => {
+                            if (!state.pointer.down || e.pointerId !== state.pointer.id) return;
+                            const maxDist = 60, dx = e.clientX - state.joystick.originX, dy = e.clientY - state.joystick.originY;
+                            const dist = Math.sqrt(dx*dx + dy*dy);
+                            let kx = dx, ky = dy; if (dist > maxDist) { kx = (dx / dist) * maxDist; ky = (dy / dist) * maxDist; }
+                            state.joystick.dx = kx / maxDist; state.joystick.dy = ky / maxDist;
+                        }}
+                        onPointerUp={(e) => {
+                            if (e.pointerId !== state.pointer.id) return;
+                            state.pointer.down = false; state.joystick.active = false; state.joystick.dx = 0; state.joystick.dy = 0;
+                        }}
+                    ></div>
+                    {state.joystick.active && (
+                        <>
+                            <div id="joystick-base" style={{display:'block', left:state.joystick.originX, top:state.joystick.originY}}></div>
+                            <div id="joystick-knob" style={{display:'block', left:state.joystick.originX + state.joystick.dx*60, top:state.joystick.originY + state.joystick.dy*60}}></div>
+                        </>
+                    )}
+                </>
+            )}
 
             {/* HUD */}
-            {!showStart && !showGameOver && !showAuth && (
+            {!showStart && !showUpgrade && !showGameOver && (
                 <div id="hud" className="ui-layer">
-                    <div className="top-row">
-                        <div style={{flex:1}}>
-                            <div className="stat-box" style={{width: 'fit-content'}}>
-                                <div className="stat-text"><span style={{color:'var(--primary)'}}>LV.{hudState.level}</span></div>
-                                <div className="stat-text"><span style={{color:'#ccc'}}>💀 {hudState.kills}</span></div>
-                                <div className="stat-text"><span style={{color:'var(--gold)'}}>🪙 {hudState.coins}</span></div>
+                    <div className="top-row" style={{display:'flex', flexDirection:'column', width:'100%', alignItems:'center'}}>
+                        
+                        {/* Top Stats Bar */}
+                        <div style={{display:'flex', width:'100%', justifyContent:'space-between', alignItems:'flex-start'}}>
+                            <div className="stat-box">
+                                <div className="stat-text"><span style={{color:'var(--primary)'}}>LV.{hudStats.level}</span></div>
+                                <div className="stat-text"><span style={{color:'#ccc'}}>💀 {hudStats.kills}</span></div>
+                                <div className="stat-text"><span style={{color:'var(--gold)'}}>🪙 {hudStats.coins}</span></div>
                             </div>
-                            <div className="bar-container">
-                                <div id="xp-bar" className="bar-fill" style={{width: `${hudState.xp}%`}}></div>
+                            <div id="pause-btn" onClick={togglePause}>❚❚</div>
+                        </div>
+
+                        {/* XP Bar */}
+                        <div className="bar-container" style={{width:'100%', maxWidth:'600px', marginTop:'5px', height:'8px'}}>
+                            <div id="xp-bar" className="bar-fill" style={{width:`${(hudStats.xp/hudStats.nextXp)*100}%`}}></div>
+                        </div>
+
+                        {/* HP Bar - Moved to Top Center */}
+                        <div className="bar-container" style={{
+                            width:'300px', 
+                            height:'20px', 
+                            marginTop:'5px', 
+                            border:'2px solid rgba(255,50,50,0.5)',
+                            background: 'rgba(0,0,0,0.8)',
+                            position: 'relative'
+                        }}>
+                            <div id="hp-bar" className="bar-fill" style={{width:`${(hudStats.hp/hudStats.maxHp)*100}%`}}></div>
+                            <div style={{
+                                position:'absolute', top:0, left:0, width:'100%', height:'100%', 
+                                display:'flex', justifyContent:'center', alignItems:'center',
+                                fontSize:'0.7rem', fontWeight:'bold', color:'#fff', textShadow:'0 1px 2px #000'
+                            }}>
+                                {Math.ceil(hudStats.hp)} / {Math.ceil(hudStats.maxHp)}
                             </div>
                         </div>
-                        <div id="pause-btn" onClick={togglePause}>❚❚</div>
-                    </div>
-                    
-                    <div id="timer">{hudState.time}</div>
 
-                    <div id="boss-hud" className={isBossActive ? 'active' : ''}>
+                        <div id="timer" style={{position:'relative', top:'0', left:'0', transform:'none', marginTop:'5px', fontSize:'1.2rem'}}>{hudStats.time}</div>
+                    </div>
+
+                    {/* Boss HUD */}
+                    <div id="boss-hud" className={showBossHud ? "active" : ""}>
                         <div id="boss-name">⚠️ THE HEXAGON ⚠️</div>
-                        <div id="boss-hp-container"><div id="boss-hp-fill" style={{width: `${hudState.bossHp}%`}}></div></div>
+                        <div id="boss-hp-container"><div id="boss-hp-fill" style={{width:`${bossHp}%`}}></div></div>
                     </div>
 
-                    <div className="bar-container" style={{position:'absolute', bottom: '30px', left: '30px', width:'200px', border: '1px solid rgba(255,50,50,0.3)'}}>
-                        <div id="hp-bar" className="bar-fill" style={{width: `${hudState.hp}%`}}></div>
-                    </div>
-
-                    <div id="ult-btn" className={`interactive ${!hudState.ultReady ? 'disabled' : ''}`} onClick={useUltimate}>
-                        <div id="ult-icon">💣️</div>
-                        <div id="ult-label">ULTIMATE</div>
-                    </div>
-                </div>
-            )}
-
-            {/* Auth Screen */}
-            {showAuth && (
-                <div className="ui-layer menu-screen interactive" style={{display:'flex'}}>
-                     <h1 className="screen-title" style={{fontSize:'3.5rem', marginBottom:'10px', color:'var(--primary)'}}>IFKO<br/><span style={{fontSize:'2.5rem', color:'#fff'}}>SURVIVOR</span></h1>
-                     <p className="screen-subtitle" style={{marginBottom:'30px'}}>IDENTITY REQUIRED</p>
-
-                     <div style={{maxWidth:'300px', width:'100%'}}>
-                        <input type="email" className="auth-input" placeholder="이메일 (Email)" value={email} onChange={e => setEmail(e.target.value)} />
-                        <input type="password" className="auth-input" placeholder="비밀번호 (Password)" value={password} onChange={e => setPassword(e.target.value)} />
-                        
-                        {authError && <p style={{color:'#ff3333', fontSize:'0.9rem', marginTop:'-10px', marginBottom:'15px'}}>{authError}</p>}
-
-                        {authMode === 'login' ? (
+                    {/* Ultimate Button */}
+                    <div id="ult-btn" 
+                        className={`interactive ${hudStats.ultReady ? '' : 'disabled'}`} 
+                        onClick={useUltimate}
+                        style={{position:'absolute', bottom:'30px', right:'30px'}}
+                    >
+                        {hudStats.ultReady ? (
                             <>
-                                <button className="btn" style={{width:'100%', marginBottom:'10px'}} onClick={handleLogin}>로그인</button>
-                                <button className="btn btn-secondary" style={{width:'100%', marginBottom:'20px'}} onClick={() => {setAuthMode('signup'); setAuthError('');}}>회원가입으로 이동</button>
+                                <div id="ult-icon">💣️</div>
+                                <div id="ult-label">ULTIMATE</div>
                             </>
                         ) : (
-                            <>
-                                <button className="btn" style={{width:'100%', marginBottom:'10px'}} onClick={handleSignup}>회원가입</button>
-                                <button className="btn btn-secondary" style={{width:'100%', marginBottom:'20px'}} onClick={() => {setAuthMode('login'); setAuthError('');}}>로그인으로 돌아가기</button>
-                            </>
+                            <div style={{fontSize:'0.8rem'}}>{Math.floor((1-hudStats.ultCd)*100)}%</div>
                         )}
-
-                        <div style={{borderTop:'1px solid rgba(255,255,255,0.2)', margin:'10px 0'}}></div>
-                        <button className="btn btn-secondary" style={{width:'100%'}} onClick={handleGuestLogin}>게스트로 시작</button>
-                     </div>
-                </div>
-            )}
-
-            {/* Start Screen */}
-            {showStart && (
-                <div className="ui-layer menu-screen interactive" style={{display:'flex'}}>
-                    <div style={{position:'absolute', top:'20px', left:'20px', color:'#aaa', fontSize:'0.9rem'}}>
-                        USER: <span style={{color:'var(--primary)'}}>{currentUser === 'guest' ? 'Guest' : 'Agent'}</span>
-                    </div>
-
-                    <h1 className="screen-title" style={{fontSize:'3.5rem', marginBottom:'10px', color:'var(--primary)'}}>IFKO<br/><span style={{fontSize:'2.5rem', color:'#fff'}}>SURVIVOR</span></h1>
-                    <p className="screen-subtitle" style={{marginBottom:'40px'}}>PLANET : IFKO-S512</p>
-                    
-                    <button className="btn" style={{width:'200px', height:'60px', fontSize:'1.2rem', marginBottom:'30px'}} onClick={startGame}>START</button>
-                    
-                    <div className="menu-grid">
-                        <button className="btn btn-secondary" onClick={openClassScreen}>직업소</button>
-                        <button className="btn btn-secondary" onClick={openArmory}>무기고</button>
-                        <button className="btn btn-secondary" onClick={openShop}>연구소</button>
-                        <button className="btn btn-secondary" onClick={openGacha}>보급소</button>
-                        <button className="btn btn-secondary" onClick={openWardrobe}>옷장</button>
-                        <button className="btn btn-secondary" onClick={openAchievement}>업적</button>
-                        <button className="btn btn-secondary" onClick={openSettings}>설정</button>
                     </div>
                 </div>
             )}
@@ -1166,211 +1036,80 @@ export default function Game() {
                     <h2 className="screen-title" style={{fontSize:'2rem'}}>SYSTEM UPGRADE</h2>
                     <p className="screen-subtitle">강화 모듈을 선택하십시오</p>
                     <div className="card-container">
-                        {upgradeCardsList}
+                        {upgradeCardList}
                     </div>
                 </div>
             )}
 
-            {/* Pause Screen */}
-            {showPause && (
-                <div className="ui-layer interactive menu-screen" style={{display:'flex', flexDirection:'column'}}>
-                    <h1 className="screen-title">PAUSED</h1>
-                    <p className="screen-subtitle">작전 일시 중지</p>
-                    <div style={{display:'flex', gap:'15px', flexDirection:'column'}}>
-                        <button className="btn" onClick={togglePause}>계속하기</button>
-                        <button className="btn btn-secondary" onClick={quitGame}>그만하기</button>
-                    </div>
-                </div>
-            )}
-
-            {/* Shop Screen */}
-            {showShop && (
-                <div className="ui-layer interactive menu-screen">
-                    <div className="currency-display">🪙 {uiCoins}</div>
-                    <h1 className="screen-title">LABORATORY</h1>
-                    <p className="screen-subtitle">기본 능력치 영구 강화</p>
-                    <div className="list-layout">
-                        {['damage','health','speed','greed','cooldown','magnet','crit','regen','revive','luck','evasion','xp','duration'].map(id => {
-                            const lvl = saveData.upgrades[id] || 0;
-                            const cost = id === 'revive' ? 5000 * (lvl+1) : SHOP_BASE_COST * (lvl + 1);
-                            const nameMap:any = { 
-                                damage: '기초 공격학', health: '체력 단련', speed: '기동성 훈련', greed: '탐욕의 시선', cooldown: '속사 모듈', magnet: '자기장 확장', crit: '정밀 타격', regen: '나노봇', revive: '부활 프로토콜',
-                                luck: '행운', evasion: '회피 기동', xp: '고속 학습', duration: '지속성 강화'
-                            };
-                            const descMap:any = { 
-                                damage: '공격력 +10%', health: '체력 +10', speed: '이속 +5%', greed: '골드 +10%', cooldown: '쿨타임 -5%', magnet: '범위 +30', crit: '치명타 +5%', regen: '초당 회복', revive: '부활 +1회',
-                                luck: '좋은 드랍/크리 확률', evasion: '5% 확률 회피', xp: '경험치 +10%', duration: '효과 지속 +10%'
-                            };
-                            return (
-                                <div key={id} className="shop-item">
-                                    <h3>{nameMap[id]} (Lv.{lvl})</h3>
-                                    <p>{descMap[id]}</p>
-                                    <button className="btn" style={{fontSize:'0.85rem'}} onClick={() => buyUpgrade(id, cost)}>{cost} 🪙</button>
-                                </div>
-                            )
-                        })}
-                    </div>
-                    <button className="btn btn-secondary" style={{marginTop:'20px'}} onClick={() => {setShowShop(false); setShowStart(true);}}>뒤로가기</button>
-                </div>
-            )}
-
-            {/* Armory Screen */}
-            {showArmory && (
-                <div className="ui-layer interactive menu-screen">
-                    <div className="currency-display">🪙 {uiCoins}</div>
-                    <h1 className="screen-title">ARMORY</h1>
-                    <p className="screen-subtitle">전투 장비 업그레이드</p>
-                    <div className="list-layout">
-                        {[
-                            { id: 'weapon', name: '플라즈마 라이플', desc: '공격력 +20%', icon: '🔫' },
-                            { id: 'armor', name: '나노 슈트', desc: '최대 체력 +20', icon: '🛡️' },
-                            { id: 'boots', name: '제트 부츠', desc: '이속 +5% / 쿨타임 -2%', icon: '🥾' }
-                        ].map(g => {
-                            const lvl = saveData.equipment[g.id];
-                            const cost = SHOP_BASE_COST * (lvl + 1);
-                            return (
-                                <div key={g.id} className="shop-item">
-                                    <h3 style={{fontSize:'1.5rem'}}>{g.icon}</h3>
-                                    <h3>{g.name} (Lv.{lvl})</h3>
-                                    <p>{g.desc}</p>
-                                    <button className="btn" style={{fontSize:'0.85rem'}} onClick={() => upgradeEquipment(g.id, cost)}>{cost} 🪙</button>
-                                </div>
-                            )
-                        })}
-                    </div>
-                    <button className="btn btn-secondary" style={{marginTop:'20px'}} onClick={() => {setShowArmory(false); setShowStart(true);}}>뒤로가기</button>
-                </div>
-            )}
-
-            {/* Class Screen */}
-            {showClass && (
-                <div className="ui-layer interactive menu-screen">
-                    <div className="currency-display">🪙 {uiCoins}</div>
-                    <h1 className="screen-title">BARRACKS</h1>
-                    <p className="screen-subtitle">전투 직업 선택 및 해금</p>
-                    <div className="list-layout">
-                        {CLASSES.map(cls => {
-                            const owned = saveData.ownedClasses.includes(cls.id);
-                            const selected = saveData.currentClass === cls.id;
-                            return (
-                                <div key={cls.id} className={`shop-item ${selected ? 'selected' : ''}`}>
-                                    <h3 style={{fontSize:'1.5rem'}}>{cls.icon}</h3>
-                                    <h3>{cls.name}</h3>
-                                    <p>{cls.desc}</p>
-                                    <div style={{marginBottom:'10px', display:'flex', gap:'5px', flexWrap:'wrap', justifyContent:'center'}}>
-                                        {cls.stats.hp!==0 && <span className="class-badge">HP {cls.stats.hp>0?'+':''}{cls.stats.hp}</span>}
-                                        {cls.stats.dmg!==0 && <span className="class-badge">DMG {cls.stats.dmg*100}%</span>}
-                                        {cls.stats.spd!==0 && <span className="class-badge">SPD {cls.stats.spd}</span>}
-                                        {cls.stats.cd!==0 && <span className="class-badge">CDR {cls.stats.cd*100}%</span>}
-                                    </div>
-                                    {selected && <div className="selected-check">✅</div>}
-                                    {selected ? <button className="btn btn-secondary" disabled>장착 중</button> :
-                                     owned ? <button className="btn" onClick={() => selectClass(cls.id)}>선택</button> :
-                                     <button className="btn btn-accent" onClick={() => buyClass(cls.id, cls.cost)}>{cls.cost} 🪙</button>
-                                    }
-                                </div>
-                            )
-                        })}
-                    </div>
-                    <button className="btn btn-secondary" style={{marginTop:'20px'}} onClick={() => {setShowClass(false); setShowStart(true);}}>뒤로가기</button>
-                </div>
-            )}
-
-            {/* Gacha Screen */}
-            {showGacha && (
-                <div className="ui-layer interactive menu-screen">
-                    <div className="currency-display">🪙 {uiCoins}</div>
-                    <h1 className="screen-title">SUPPLY DEPOT</h1>
-                    <p className="screen-subtitle">보급품 투하 요청</p>
+            {/* Start Screen */}
+            {showStart && menuState === 'none' && (
+                <div className="ui-layer menu-screen interactive" style={{display:'flex'}}>
+                    <h1 className="screen-title" style={{fontSize:'3.5rem', marginBottom:'10px', color:'var(--primary)'}}>
+                        IFKO<br/><span style={{fontSize:'2.5rem', color:'#fff'}}>SURVIVOR</span>
+                    </h1>
+                    <p className="screen-subtitle" style={{marginBottom:'40px'}}>PLANET : IFKO-S512</p>
                     
-                    {gachaRes.visible ? (
-                        <div id="gacha-result" style={{display:'flex'}}>
-                            <div className="gacha-icon">{gachaRes.icon}</div>
-                            <div className="gacha-name">{gachaRes.name}</div>
-                            <div className="gacha-desc" style={{whiteSpace:'pre-wrap'}}>{gachaRes.desc}</div>
-                            <button className="btn" onClick={() => setGachaRes({...gachaRes, visible: false})}>확인</button>
+                    {authMode ? (
+                        <div style={{width:'300px', marginBottom:'20px'}}>
+                            <input className="auth-input" type="email" placeholder="이메일" value={email} onChange={e=>setEmail(e.target.value)}/>
+                            <input className="auth-input" type="password" placeholder="비밀번호" value={password} onChange={e=>setPassword(e.target.value)}/>
+                            <div style={{display:'flex', gap:'10px'}}>
+                                <button className="btn" onClick={handleLogin}>로그인</button>
+                                <button className="btn btn-secondary" onClick={handleSignUp}>회원가입</button>
+                            </div>
+                            <button className="btn btn-secondary" style={{width:'100%', marginTop:'10px'}} onClick={()=>{setAuthMode(false); loadSaveData('guest');}}>게스트로 시작</button>
                         </div>
                     ) : (
-                        <div style={{display:'flex', flexDirection:'column', gap:'15px'}}>
-                            <button className="btn" onClick={rollGacha}>
-                                <div>유물 뽑기</div><div style={{fontSize:'0.8rem', opacity:0.8}}>{GACHA_COST} 🪙</div>
+                        <>
+                            <button className="btn" style={{width:'200px', height:'60px', fontSize:'1.2rem', marginBottom:'30px'}} onClick={startGame}>
+                                MISSION START
                             </button>
-                            <button className="btn btn-accent" onClick={rollSkinGacha}>
-                                <div>스킨 뽑기</div><div style={{fontSize:'0.8rem', opacity:0.8}}>{SKIN_COST} 🪙</div>
-                            </button>
-                        </div>
+                            <div className="menu-grid">
+                                <button className="btn btn-secondary" onClick={()=>setMenuState('class')}>직업소</button>
+                                <button className="btn btn-secondary" onClick={()=>setMenuState('armory')}>무기고</button>
+                                <button className="btn btn-secondary" onClick={()=>setMenuState('shop')}>연구소</button>
+                                <button className="btn btn-secondary" onClick={()=>setMenuState('wardrobe')}>옷장</button>
+                            </div>
+                        </>
                     )}
-                    <button className="btn btn-secondary" style={{marginTop:'20px'}} onClick={() => {setShowGacha(false); setShowStart(true);}}>뒤로가기</button>
                 </div>
             )}
 
-            {/* Wardrobe Screen */}
-            {showWardrobe && (
+            {/* Sub Menus */}
+            {menuState === 'shop' && (
                 <div className="ui-layer interactive menu-screen">
-                    <h1 className="screen-title">WARDROBE</h1>
-                    <p className="screen-subtitle">외형 변경</p>
-                    <div className="skin-grid">
-                        {SKINS.map(s => {
-                            const owned = saveData.ownedSkins.includes(s.id);
-                            return (
-                                <div key={s.id} className={`skin-item ${saveData.currentSkin === s.id ? 'selected' : ''} ${!owned ? 'locked' : ''}`}
-                                     onClick={() => owned && selectSkin(s.id)}>
-                                    <div className="skin-preview">{s.icon}</div>
-                                    <div className="skin-name">{s.name}</div>
-                                    {!owned && <div className="lock-icon">🔒</div>}
-                                </div>
-                            )
-                        })}
-                    </div>
-                    <button className="btn btn-secondary" style={{marginTop:'20px'}} onClick={() => {setShowWardrobe(false); setShowStart(true);}}>뒤로가기</button>
+                    <div className="currency-display">🪙 {saveData.coins}</div>
+                    <h1 className="screen-title">LABORATORY</h1>
+                    <p className="screen-subtitle">기본 능력치 영구 강화</p>
+                    {renderShop()}
+                    <button className="btn btn-secondary" style={{marginTop:'20px'}} onClick={()=>setMenuState('none')}>뒤로가기</button>
                 </div>
             )}
 
-            {/* Achievement Screen */}
-            {showAchievement && (
+             {menuState === 'class' && (
                 <div className="ui-layer interactive menu-screen">
-                    <div className="currency-display">🪙 {uiCoins}</div>
-                    <h1 className="screen-title">ARCHIVES</h1>
-                    <p className="screen-subtitle">임무 기록 및 보상</p>
+                     <div className="currency-display">🪙 {saveData.coins}</div>
+                    <h1 className="screen-title">BARRACKS</h1>
                     <div className="list-layout">
-                        {ACHIEVEMENT_LIST.map(ach => {
-                            const claimed = saveData.achievements.includes(ach.id);
-                            let progress = 0;
-                            let current = 0;
-                            if(ach.target.type === 'kills') current = saveData.stats.totalKills || 0;
-                            if(ach.target.type === 'time') current = saveData.stats.totalTime || 0;
-                            if(ach.target.type === 'coins') current = saveData.stats.totalCoins || 0;
-                            progress = Math.min(100, (current / ach.target.val) * 100);
-                            
-                            return (
-                                <div key={ach.id} className={`shop-item ${claimed ? 'selected' : ''}`}>
-                                    <h3>{ach.name}</h3>
-                                    <p>{ach.desc}</p>
-                                    <div className="bar-container" style={{width:'100%', margin:'5px 0'}}>
-                                        <div className="bar-fill" style={{width:`${progress}%`, background:'var(--primary)'}}></div>
-                                    </div>
-                                    {claimed ? <button className="btn btn-secondary" disabled>완료됨</button> :
-                                     progress >= 100 ? <button className="btn btn-accent" onClick={() => claimAchievement(ach.id, ach.reward)}>보상: {ach.reward} 🪙</button> :
-                                     <div style={{fontSize:'0.8rem', color:'#666'}}>{current} / {ach.target.val}</div>
-                                    }
-                                </div>
-                            )
+                        {CLASSES.map(cls => {
+                             const owned = saveData.ownedClasses.includes(cls.id);
+                             const selected = saveData.currentClass === cls.id;
+                             return (
+                                 <div key={cls.id} className={`shop-item ${selected ? 'selected' : ''}`}>
+                                     <h3 style={{fontSize:'1.5rem'}}>{cls.icon}</h3>
+                                     <h3>{cls.name}</h3>
+                                     <p>{cls.desc}</p>
+                                     {selected ? <button className="btn btn-secondary" disabled>장착 중</button> :
+                                      owned ? <button className="btn" onClick={()=>{ saveData.currentClass = cls.id; save(); setMenuState('class'); }}>선택</button> :
+                                      <button className="btn btn-accent" onClick={()=>{
+                                          if(saveData.coins >= cls.cost) { saveData.coins -= cls.cost; saveData.ownedClasses.push(cls.id); saveData.currentClass = cls.id; save(); setMenuState('class'); }
+                                          else alert("코인이 부족합니다!");
+                                      }}>{cls.cost} 🪙</button>}
+                                 </div>
+                             );
                         })}
                     </div>
-                    <button className="btn btn-secondary" style={{marginTop:'20px'}} onClick={() => {setShowAchievement(false); setShowStart(true);}}>뒤로가기</button>
-                </div>
-            )}
-
-            {/* Settings Screen */}
-            {showSettings && (
-                <div className="ui-layer interactive menu-screen">
-                    <h1 className="screen-title">SETTINGS</h1>
-                    <p className="screen-subtitle">시스템 설정</p>
-                    <div style={{display:'flex', flexDirection:'column', gap:'15px'}}>
-                        <button className="btn btn-danger" onClick={handleLogout}>로그아웃</button>
-                        <button className="btn btn-danger" onClick={resetData}>데이터 초기화</button>
-                        <button className="btn btn-secondary" onClick={() => {setShowSettings(false); setShowStart(true);}}>뒤로가기</button>
-                    </div>
+                    <button className="btn btn-secondary" style={{marginTop:'20px'}} onClick={()=>setMenuState('none')}>뒤로가기</button>
                 </div>
             )}
 
@@ -1378,13 +1117,11 @@ export default function Game() {
             {showGameOver && (
                 <div className="ui-layer menu-screen interactive">
                     <h1 className="screen-title" style={{color:'#ff3333', background:'none'}}>MISSION FAILED</h1>
-                    <p style={{fontSize:'1.5rem', marginBottom:'5px'}}>
-                        생존 시간: {Math.floor(state.time / 3600).toString().padStart(2,'0')}:{Math.floor((state.time % 3600) / 60).toString().padStart(2,'0')}
-                    </p>
+                    <p style={{fontSize:'1.5rem', marginBottom:'5px'}}>생존 시간: {hudStats.time}</p>
                     <p style={{fontSize:'1.2rem', color:'var(--gold)', marginBottom:'30px'}}>획득: {state.coins} 🪙</p>
                     <div style={{display:'flex', gap:'15px'}}>
-                        <button className="btn" onClick={restartGame}>재시도</button>
-                        <button className="btn btn-secondary" onClick={backToMain}>메인으로</button>
+                        <button className="btn" onClick={startGame}>재시도</button>
+                        <button className="btn btn-secondary" onClick={setShowStartScreen}>메인으로</button>
                     </div>
                 </div>
             )}
