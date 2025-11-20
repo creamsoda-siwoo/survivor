@@ -1,9 +1,1 @@
-import Game from '@/components/Game';
-
-export default function Home() {
-  return (
-    <main>
-      <Game />
-    </main>
-  );
-}
+// File deleted and merged into index.html
