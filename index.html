@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -9,7 +10,6 @@
     <meta property="og:title" content="IFKO SURVIVOR">
     <meta property="og:description" content="잎코 서바이벌 - 로그라이크 슈팅 액션">
     <meta property="og:type" content="website">
-    <meta name="google-site-verification" content="NCKESRU4i_d9qs-PuI9SeKCcGxSGXPz-KuwzMcrOhXQ" />
     <title>IFKO SURVIVOR</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌌</text></svg>">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Exo+2:wght@400;700;900&display=swap" rel="stylesheet">
@@ -488,7 +488,7 @@
         <div id="skill-screen" class="ui-layer hidden interactive menu-screen">
             <h1 class="screen-title">SKILLS</h1>
             <p class="screen-subtitle">궁극기 선택</p>
-            <div id="skill-container" style="width: 100%; max-width: 500px; text-align: left;"></div>
+            <div id="skill-container" style="width: 100%; max-width: 500px; text-align: left; max-height: 60vh; overflow-y: auto;"></div>
             <button class="btn btn-secondary" style="margin-top:20px;" onclick="closeSkillScreen()">뒤로가기</button>
         </div>
 
@@ -516,10 +516,10 @@
             
             <div id="gacha-buttons" style="display:flex; flex-direction:column; gap:15px;">
                 <button id="gacha-roll-btn" class="btn" onclick="rollGacha()">
-                    <div>유물 뽑기</div><div style="font-size:0.8rem; opacity:0.8">150 🪙</div>
+                    <div>유물 뽑기</div><div style="font-size:0.8rem; opacity:0.8">300 🪙</div>
                 </button>
                 <button id="skin-roll-btn" class="btn btn-accent" onclick="rollSkinGacha()">
-                    <div>스킨 뽑기</div><div style="font-size:0.8rem; opacity:0.8">500 🪙</div>
+                    <div>스킨 뽑기</div><div style="font-size:0.8rem; opacity:0.8">1000 🪙</div>
                 </button>
             </div>
             <button class="btn btn-secondary" style="margin-top:20px;" onclick="closeGacha()">뒤로가기</button>
@@ -594,17 +594,17 @@ const CANVAS_H = window.innerHeight;
 let ZOOM = 0.75; 
 const BOSS_SPAWN_TIME = 60; 
 const BOSS_RESPAWN_DELAY = 60 * 60; 
-const SHOP_BASE_COST = 25; // Decreased from 50
-const GACHA_COST = 150; // Decreased from 300
-const SKIN_COST = 500; // Decreased from 1000
+const SHOP_BASE_COST = 50; 
+const GACHA_COST = 300; 
+const SKIN_COST = 1000; 
 
 // --- Definitions ---
 const CLASSES = [
     { id: 'soldier', name: '솔저', desc: '균형 잡힌 전투 요원', stats: { hp: 0, dmg: 0, spd: 0, cd: 0 }, cost: 0, icon: '🪖' },
-    { id: 'guardian', name: '가디언', desc: '체력 +50, 이동속도 -10%', stats: { hp: 50, dmg: 0, spd: -0.5, cd: 0 }, cost: 500, icon: '🛡️' },
-    { id: 'assassin', name: '어쌔신', desc: '공격력 +30%, 체력 -30', stats: { hp: -30, dmg: 0.3, spd: 1.0, cd: 0 }, cost: 1000, icon: '🗡️' },
-    { id: 'mage', name: '아크메이지', desc: '쿨타임 -10%, 체력 -20', stats: { hp: -20, dmg: 0.1, spd: 0, cd: 0.1 }, cost: 1500, icon: '🔮' },
-    { id: 'engineer', name: '엔지니어', desc: '지속시간 +20%, 크기 +10%', stats: { hp: 10, dmg: 0, spd: 0, cd: 0 }, cost: 2000, icon: '🔧' }
+    { id: 'guardian', name: '가디언', desc: '체력 +50, 이동속도 -10%', stats: { hp: 50, dmg: 0, spd: -0.5, cd: 0 }, cost: 1000, icon: '🛡️' },
+    { id: 'assassin', name: '어쌔신', desc: '공격력 +30%, 체력 -30', stats: { hp: -30, dmg: 0.3, spd: 1.0, cd: 0 }, cost: 2000, icon: '🗡️' },
+    { id: 'mage', name: '아크메이지', desc: '쿨타임 -10%, 체력 -20', stats: { hp: -20, dmg: 0.1, spd: 0, cd: 0.1 }, cost: 3000, icon: '🔮' },
+    { id: 'engineer', name: '엔지니어', desc: '지속시간 +20%, 크기 +10%', stats: { hp: 10, dmg: 0, spd: 0, cd: 0 }, cost: 4000, icon: '🔧' }
 ];
 
 const ULTIMATES = [
@@ -631,7 +631,6 @@ const ARTIFACTS = [
     { id: 'axe', name: '광전사의 도끼', desc: '체력이 낮을수록 강해짐', icon: '🪓' },
     { id: 'watch', name: '정지된 시계', desc: '적 이동속도 -10%', icon: '⏱️' },
     { id: 'thorn', name: '가시 갑옷', desc: '피격 시 반사 피해', icon: '🌵' },
-    // New Artifacts
     { id: 'drink', name: '에너지 드링크', desc: '공격 속도 +10%', icon: '🥤' },
     { id: 'scope', name: '스나이퍼 스코프', desc: '치명타 확률 +10%', icon: '🔭' },
     { id: 'shield', name: '보호막 생성기', desc: '주기적으로 보호막 생성', icon: '🛡️' },
@@ -655,12 +654,16 @@ const UPGRADES = [
     { id: 'plasma', name: '플라즈마 쉴드', desc: '회전하는 방어막', type: 'WEAPON', icon: '🛡️' },
     { id: 'ion', name: '이온 캐논', desc: '궤도 폭격 레이저', type: 'WEAPON', icon: '🛰️' },
     { id: 'frost', name: '프로스트 노바', desc: '주변 적 빙결', type: 'WEAPON', icon: '❄️' },
-    // New Weapons
     { id: 'boomerang', name: '부메랑', desc: '적을 치고 되돌아옵니다', type: 'WEAPON', icon: '🪃' },
     { id: 'flame', name: '화염 방사기', desc: '전방에 불을 뿜습니다', type: 'WEAPON', icon: '🔥' },
     { id: 'gauss', name: '가우스 라이플', desc: '초고속 관통 저격', type: 'WEAPON', icon: '🔋' },
     { id: 'spikedball', name: '스파이크 볼', desc: '주변을 튕겨다니는 철퇴', type: 'WEAPON', icon: '🧶' },
     { id: 'crossbow', name: '크로스보우', desc: '강력한 단발 사격', type: 'WEAPON', icon: '🏹' },
+    { id: 'wand', name: '비전 지팡이', desc: '적을 추적하는 마법 미사일', type: 'WEAPON', icon: '🪄' },
+    { id: 'saw', name: '회전 톱날', desc: '전방을 가르는 톱날 발사', type: 'WEAPON', icon: '⚙️' },
+    // V16 New Weapons
+    { id: 'pulse', name: '펄스 링', desc: '주변 적을 밀쳐내는 충격파', type: 'WEAPON', icon: '⭕' },
+    { id: 'hyperion', name: '하이페리온 빔', desc: '화면 끝까지 닿는 거대 광선', type: 'WEAPON', icon: '🌠' },
     
     // Hidden
     { id: 'singularity', name: '특이점', desc: '[히든] 적을 소멸시키는 블랙홀', type: 'HIDDEN', icon: '⚫', weight: 0.01 },
@@ -723,7 +726,7 @@ const DEFAULT_DATA = {
 let saveData = loadData();
 
 function loadData() {
-    const d = localStorage.getItem('ifko_evo_v15');
+    const d = localStorage.getItem('ifko_evo_v16');
     if(!d) return JSON.parse(JSON.stringify(DEFAULT_DATA));
     const parsed = JSON.parse(d);
     const newData = JSON.parse(JSON.stringify(DEFAULT_DATA));
@@ -738,7 +741,7 @@ function loadData() {
 }
 
 function save() {
-    localStorage.setItem('ifko_evo_v15', JSON.stringify(saveData));
+    localStorage.setItem('ifko_evo_v16', JSON.stringify(saveData));
 }
 
 function resetData() {
@@ -761,7 +764,7 @@ const state = {
     lastTap: 0,
     player: null, enemies: [], particles: [], items: [], projectiles: [], 
     boss: null, bossRespawnTimer: 0, bossLevel: 1,
-    popups: [], shockwaves: [], gravityWells: [], mines: [], drones: [], voidZones: [], ionBeams: [], worms: [], spikeBalls: [],
+    popups: [], shockwaves: [], gravityWells: [], mines: [], drones: [], voidZones: [], ionBeams: [], worms: [], spikeBalls: [], hyperBeams: [],
     event: { type: null, timer: 0 },
     stars: [],
     weapons: {},
@@ -839,7 +842,8 @@ class Player {
 
         this.maxHp = (100 + job.stats.hp + shopHp + equipHp) * (1 + shopGrowth);
         this.hp = this.maxHp;
-        this.baseSpeed = (3 + job.stats.spd + shopSpd + artSpd + equipSpd);
+        // Increased base speed as requested
+        this.baseSpeed = (5 + job.stats.spd + shopSpd + artSpd + equipSpd);
         this.speed = this.baseSpeed;
         this.dmgMult = 1 + job.stats.dmg + shopDmg + artDmg + equipDmg;
         this.cdReduc = Math.min(0.7, job.stats.cd + artCd + equipCd + shopCd); 
@@ -881,8 +885,19 @@ class Player {
         let moveX = 0, moveY = 0;
 
         if (this.dashTime > 0) {
-            this.x += this.dashVec.x * 15; this.y += this.dashVec.y * 15;
+            // Dash logic fix: Scale speed with player speed
+            const dashSpeed = this.speed * 3.5;
+            moveX = this.dashVec.x * dashSpeed;
+            moveY = this.dashVec.y * dashSpeed;
+            
+            this.x += moveX; this.y += moveY;
+            this.invuln = 5; // Keep invuln while dashing
             this.dashTime--;
+            
+            // Boundary Check during dash to prevent wall clipping
+            // Simple infinite map logic doesn't have hard walls, but if we had limits:
+            // if(this.x < -2000) this.x = -2000; etc.
+            
             if(this.dashTime % 3 === 0) state.particles.push(new Particle(this.x, this.y, '#00ffcc', 10, 10));
         } else {
             let dx = 0, dy = 0;
@@ -915,20 +930,32 @@ class Player {
     dash() {
         if (this.dashCd > 0) return;
         let dx = 0, dy = 0;
-        if (state.joystick.active) { dx = state.joystick.dx; dy = state.joystick.dy; } 
-        else if (state.keys.w || state.keys.a || state.keys.s || state.keys.d || state.keys.ArrowUp || state.keys.ArrowLeft || state.keys.ArrowDown || state.keys.ArrowRight) {
+        
+        // Input detection
+        if (state.joystick.active) { 
+            dx = state.joystick.dx; dy = state.joystick.dy; 
+        } else if (state.keys.w || state.keys.a || state.keys.s || state.keys.d || state.keys.ArrowUp || state.keys.ArrowLeft || state.keys.ArrowDown || state.keys.ArrowRight) {
             if (state.keys.w || state.keys.ArrowUp) dy -= 1; 
             if (state.keys.s || state.keys.ArrowDown) dy += 1;
             if (state.keys.a || state.keys.ArrowLeft) dx -= 1; 
             if (state.keys.d || state.keys.ArrowRight) dx += 1;
             const len = Math.sqrt(dx*dx + dy*dy); 
             if (len > 0) { dx /= len; dy /= len; }
-        } else dx = state.facingRight ? 1 : -1;
+        } else {
+            // Fix: Dash in facing direction if no input
+            dx = state.facingRight ? 1 : -1;
+            dy = 0;
+        }
+        
+        // Normalize check to ensure we don't get stuck
+        if (dx === 0 && dy === 0) { dx = state.facingRight ? 1 : -1; }
 
         this.dashVec = {x: dx, y: dy};
-        this.dashTime = 10; 
+        this.dashTime = 12; // Slightly longer dash
         this.dashCd = Math.floor(120 * (1 - this.cdReduc) * state.sessionStats.dashCdMult);
-        createExplosion(this.x, this.y, '#ffffff', 5);
+        this.invuln = 15; // I-frames start
+        createExplosion(this.x, this.y, '#ffffff', 8);
+        createPopup("DASH", this.x, this.y - 30, '#00ffcc');
     }
 
     takeDamage(amt) {
@@ -1024,6 +1051,8 @@ class Enemy {
         else if (type === 'DASHER') { this.hp = 25*scaler; this.speed = 1.5; this.size = 16; this.color = '#ff9900'; this.dmg = 20; this.dashMode = false; this.dashCool = 100; }
         else if (type === 'SPLITTER') { this.hp = 40*scaler; this.speed = 1.0; this.size = 22; this.color = '#00ff99'; this.dmg = 20; }
         else if (type === 'SPLIT_MINI') { this.hp = 15*scaler; this.speed = 2.0; this.size = 12; this.color = '#00ff99'; this.dmg = 10; }
+        else if (type === 'SUMMONER') { this.hp = 50*scaler; this.speed = 0.7; this.size = 25; this.color = '#ff00ff'; this.dmg = 10; this.summonTimer = 0; }
+        else if (type === 'MINION') { this.hp = 5*scaler; this.speed = 2.5; this.size = 8; this.color = '#ffaaaa'; this.dmg = 5; }
         
         if (state.isVoidMode) { this.dmg *= 1.5; this.speed *= 1.2; }
         if (this.isElite) {
@@ -1072,6 +1101,17 @@ class Enemy {
                  this.dashCool--;
                  if (this.dashCool <= 0 && dist < 300) { this.dashMode = true; this.dashCool = 40; createPopup("!", this.x, this.y - 20, "#ff0000"); }
              }
+        } else if (this.type === 'SUMMONER') {
+            if (dist < 400) { this.x -= (dx / dist) * this.speed; this.y -= (dy / dist) * this.speed; }
+            else { this.x += (dx / dist) * this.speed; this.y += (dy / dist) * this.speed; }
+            this.summonTimer++;
+            if(this.summonTimer > 240) {
+                this.summonTimer = 0;
+                createPopup("SUMMON", this.x, this.y - 30, '#ff00ff');
+                for(let i=0; i<3; i++) {
+                    state.enemies.push(new Enemy('MINION', this.x + (Math.random()-0.5)*50, this.y + (Math.random()-0.5)*50));
+                }
+            }
         } else if (this.type === 'WORM_HEAD') {
              const angle = Math.atan2(dy, dx);
              this.x += Math.cos(angle) * this.speed;
@@ -1158,6 +1198,10 @@ class Enemy {
         else if (this.type === 'SHOOTER') { ctx.moveTo(this.x - this.size, this.y - this.size); ctx.lineTo(this.x + this.size, this.y); ctx.lineTo(this.x - this.size, this.y + this.size); }
         else if (this.type === 'WORM_HEAD' || this.type === 'WORM_BODY') { ctx.arc(this.x, this.y, this.size, 0, Math.PI*2); }
         else if (this.type === 'TANK') { ctx.rect(this.x - this.size, this.y - this.size*0.8, this.size*2, this.size*1.6); }
+        else if (this.type === 'SUMMONER') { 
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI*2); ctx.fill(); 
+            ctx.beginPath(); ctx.strokeStyle = '#fff'; ctx.arc(this.x, this.y, this.size + 5, 0, Math.PI*2); ctx.stroke();
+        }
         else ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
         ctx.fill(); 
         if(this.isElite) { ctx.strokeStyle='#ffd700'; ctx.lineWidth=2; ctx.stroke(); }
@@ -1247,6 +1291,10 @@ class Projectile {
         this.hitList = []; this.knockback = knockback;
         this.angle = Math.atan2(vy, vx);
         this.returning = false; // For boomerang
+        
+        if (type === 'magic_missile') {
+            this.homing = true;
+        }
     }
     update() { 
         if (this.type === 'boomerang') {
@@ -1265,7 +1313,33 @@ class Projectile {
             return false;
         }
 
-        this.x += this.vx; this.y += this.vy; this.duration--; 
+        if (this.type === 'magic_missile') {
+            let closest = null, min = 400;
+            for(const e of state.enemies) { const d = Math.hypot(e.x-this.x, e.y-this.y); if(d<min){min=d;closest=e;}}
+            if (closest) {
+                const angle = Math.atan2(closest.y - this.y, closest.x - this.x);
+                // Steer towards target
+                const speed = 12 * state.sessionStats.projectileSpeed;
+                this.vx += Math.cos(angle) * 1;
+                this.vy += Math.sin(angle) * 1;
+                const currentSpeed = Math.hypot(this.vx, this.vy);
+                this.vx = (this.vx/currentSpeed)*speed;
+                this.vy = (this.vy/currentSpeed)*speed;
+            }
+            state.particles.push(new Particle(this.x, this.y, '#aa00ff', 0, 5, 2));
+        }
+
+        if (this.type === 'saw') {
+            if (this.duration > 100) { // Initial Move
+                this.x += this.vx; this.y += this.vy;
+            } else { // Spin in place
+                this.angle += 0.5;
+            }
+        } else {
+            this.x += this.vx; this.y += this.vy; 
+        }
+
+        this.duration--; 
         if(this.type === 'missile' || this.type === 'nuke') {
             state.particles.push(new Particle(this.x, this.y, '#555', 0, 10, 3));
         }
@@ -1291,6 +1365,16 @@ class Projectile {
              ctx.beginPath(); ctx.rect(-10, -3, 20, 6); ctx.fill();
              ctx.beginPath(); ctx.rect(-3, -10, 6, 20); ctx.fill();
              ctx.restore();
+        } else if (this.type === 'saw') {
+             ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.angle || 0);
+             ctx.beginPath(); ctx.arc(0, 0, this.size, 0, Math.PI*2); ctx.strokeStyle='#ccc'; ctx.stroke();
+             for(let i=0; i<8; i++) {
+                 ctx.rotate(Math.PI/4);
+                 ctx.beginPath(); ctx.moveTo(0, this.size); ctx.lineTo(5, this.size+5); ctx.lineTo(-5, this.size+5); ctx.fill();
+             }
+             ctx.restore();
+        } else if (this.type === 'magic_missile') {
+             ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI*2); ctx.fill();
         } else if (this.type === 'bullet') {
              ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI*2); ctx.fill();
         } else if (this.type === 'missile' || this.type === 'nuke') {
@@ -1363,6 +1447,45 @@ class IonBeam {
             ctx.fillStyle = `rgba(255, 255, 255, ${fade})`;
             ctx.fillRect(this.x - this.radius/2, this.y - 1000, this.radius, 1000 + this.radius);
         }
+    }
+}
+
+class HyperionBeam {
+    constructor(x, y, angle, dmg) {
+        this.x = x; this.y = y; this.angle = angle; this.dmg = dmg;
+        this.timer = 30; this.width = 100;
+    }
+    update() {
+        this.timer--;
+        if(this.timer % 5 === 0) {
+            // Hit enemies in line
+            const range = 2000;
+            state.enemies.forEach(e => {
+                // Simplified collision: Project e.pos onto beam line
+                // But for screen clearing beam, simple distance check from player if angle matches
+                const dx = e.x - this.x;
+                const dy = e.y - this.y;
+                const dist = Math.hypot(dx, dy);
+                const ang = Math.atan2(dy, dx);
+                let diff = ang - this.angle;
+                while(diff > Math.PI) diff -= Math.PI*2; while(diff < -Math.PI) diff += Math.PI*2;
+                
+                if (Math.abs(diff) < 0.2 && dist < range) {
+                    if(e.takeDamage(this.dmg)) removeEnemy(e);
+                    createExplosion(e.x, e.y, '#fff', 2);
+                }
+            });
+        }
+        return this.timer <= 0;
+    }
+    draw(ctx) {
+        const fade = this.timer / 30;
+        ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.angle);
+        ctx.fillStyle = `rgba(255, 255, 255, ${fade})`;
+        ctx.fillRect(0, -this.width/2 * fade, 2000, this.width * fade);
+        ctx.fillStyle = `rgba(255, 200, 100, ${fade*0.5})`;
+        ctx.fillRect(0, -this.width * fade, 2000, this.width * 2 * fade);
+        ctx.restore();
     }
 }
 
@@ -1827,6 +1950,56 @@ function updateWeapons() {
             w.crossbow.cd = Math.max(30, (80 - w.crossbow.level*5) * cdReduc);
         } else w.crossbow.cd--;
     }
+
+    // Arcane Wand
+    if (w.wand && w.wand.level > 0) {
+        if (w.wand.cd <= 0) {
+            const count = 2 + w.wand.level + extraProj;
+            for(let i=0; i<count; i++) {
+                setTimeout(() => {
+                    if(state.running) state.projectiles.push(new Projectile(p.x, p.y, (Math.random()-0.5)*10, (Math.random()-0.5)*10, 20+w.wand.level*5, '#aa00ff', 60, 4, 'magic_missile'));
+                }, i * 100);
+            }
+            w.wand.cd = Math.max(40, (100 - w.wand.level*5) * cdReduc);
+        } else w.wand.cd--;
+    }
+
+    // Sawblade
+    if (w.saw && w.saw.level > 0) {
+        if (w.saw.cd <= 0) {
+            const count = 1 + extraProj;
+            const angle = state.facingRight ? 0 : Math.PI;
+            for(let i=0; i<count; i++) {
+                const a = angle + (i - (count-1)/2)*0.3;
+                state.projectiles.push(new Projectile(p.x, p.y, Math.cos(a)*10, Math.sin(a)*10, 15+w.saw.level*3, '#cccccc', 150, 12, 'saw'));
+            }
+            w.saw.cd = Math.max(30, (90 - w.saw.level*5) * cdReduc);
+        } else w.saw.cd--;
+    }
+    
+    // Pulse Ring (New V16)
+    if (w.pulse && w.pulse.level > 0) {
+        if (w.pulse.cd <= 0) {
+            const range = (100 + w.pulse.level * 25) * areaMult;
+            state.shockwaves.push(new Shockwave(p.x, p.y, range, '#ff00aa'));
+            state.enemies.forEach(e => {
+                if(Math.hypot(e.x - p.x, e.y - p.y) < range) {
+                    e.takeDamage(20 + w.pulse.level * 10, 30, p.x, p.y); // High Knockback
+                }
+            });
+            w.pulse.cd = Math.max(40, (100 - w.pulse.level * 5) * cdReduc);
+        } else w.pulse.cd--;
+    }
+
+    // Hyperion Beam (New V16)
+    if (w.hyperion && w.hyperion.level > 0) {
+        if (w.hyperion.cd <= 0) {
+            const angle = state.facingRight ? 0 : Math.PI;
+            const dmg = 50 + w.hyperion.level * 20;
+            state.hyperBeams.push(new HyperionBeam(p.x, p.y, angle, dmg));
+            w.hyperion.cd = Math.max(120, (300 - w.hyperion.level * 20) * cdReduc);
+        } else w.hyperion.cd--;
+    }
     
     // Singularity (Hidden)
     if (w.singularity && w.singularity.level > 0) {
@@ -1993,6 +2166,15 @@ const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2
 function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
 window.addEventListener('resize', resize); resize();
 window.addEventListener('wheel', (e) => {
+    // Check if scrolling a menu
+    let target = e.target;
+    while(target && target !== document.body) {
+        if (target.classList && (target.classList.contains('card-container') || target.classList.contains('list-layout') || target.classList.contains('skin-grid') || target.id === 'skill-container')) {
+            return; // Allow default scroll
+        }
+        target = target.parentNode;
+    }
+
     e.preventDefault();
     ZOOM += e.deltaY * -0.001;
     ZOOM = Math.max(0.3, Math.min(2.0, ZOOM));
@@ -2083,7 +2265,7 @@ function startGame() {
     state.ult = { ready: true, charge: 100, cd: 0, maxCd: 1800, activeTime: 0 };
     state.player = new Player(); 
     state.enemies = []; state.items = []; state.particles = []; state.projectiles = []; 
-    state.popups = []; state.shockwaves = []; state.gravityWells = []; state.mines = []; state.drones = []; state.voidZones = []; state.ionBeams = []; state.worms = []; state.spikeBalls = [];
+    state.popups = []; state.shockwaves = []; state.gravityWells = []; state.mines = []; state.drones = []; state.voidZones = []; state.ionBeams = []; state.worms = []; state.spikeBalls = []; state.hyperBeams = [];
     state.boss = null; state.bossLevel = 1;
     state.keys = { w: false, a: false, s: false, d: false, space: false, ArrowUp: false, ArrowLeft: false, ArrowDown: false, ArrowRight: false };
     
@@ -2141,6 +2323,7 @@ function loop() {
         for (let i = state.mines.length - 1; i >= 0; i--) { if(state.mines[i].update()) state.mines.splice(i, 1); }
         for (let i = state.voidZones.length - 1; i >= 0; i--) { if(state.voidZones[i].update()) state.voidZones.splice(i, 1); }
         for (let i = state.ionBeams.length - 1; i >= 0; i--) { if(state.ionBeams[i].update()) state.ionBeams.splice(i, 1); }
+        for (let i = state.hyperBeams.length - 1; i >= 0; i--) { if(state.hyperBeams[i].update()) state.hyperBeams.splice(i, 1); }
         
         updateWeapons(); 
         
@@ -2183,6 +2366,7 @@ function render() {
     state.mines.forEach(m => m.draw(ctx));
     state.voidZones.forEach(z => z.draw(ctx));
     state.ionBeams.forEach(b => b.draw(ctx));
+    state.hyperBeams.forEach(b => b.draw(ctx));
     state.items.forEach(i => i.draw(ctx)); 
     state.gravityWells.forEach(g => { ctx.beginPath(); ctx.arc(g.x, g.y, g.range, 0, Math.PI*2); ctx.strokeStyle='#6600cc'; ctx.stroke(); });
     state.enemies.forEach(e => e.draw(ctx)); 
@@ -2238,6 +2422,7 @@ function spawnEnemy() {
     else if (t > 60 && rand < 0.05) type = 'DASHER';
     else if (t > 60 && rand < 0.05) type = 'SPLITTER';
     else if (t > 60 && rand < 0.1) type = 'VOLATILE';
+    else if (t > 90 && rand < 0.05) type = 'SUMMONER';
     else if (t > 60 && rand < 0.3) type = 'PENTAGON'; 
     else if (t > 30 && rand < 0.4) type = 'TRIANGLE';
 
@@ -2415,7 +2600,7 @@ function closeArmory() { document.getElementById('armory-screen').classList.add(
 function renderArmory() {
     document.getElementById('armory-currency').innerText = saveData.coins; const container = document.getElementById('armory-container'); container.innerHTML = '';
     const gears = [{ id: 'weapon', name: '플라즈마 라이플', desc: '공격력 +20%', icon: '🔫' }, { id: 'armor', name: '나노 슈트', desc: '최대 체력 +20', icon: '🛡️' }, { id: 'boots', name: '제트 부츠', desc: '이동속도 +5% / 쿨타임 -2%', icon: '🥾' }];
-    gears.forEach(g => { const lvl = saveData.equipment[g.id], cost = SHOP_BASE_COST * (lvl + 1); const div = document.createElement('div'); div.className = 'shop-item'; div.innerHTML = `<h3 style="font-size:1.5rem">${g.icon}</h3><h3>${g.name} (Lv.${lvl})</h3><p>${g.desc}</p><button class="btn" style="font-size:0.85rem;" onclick="upgradeEquipment('${g.id}', ${cost})">${cost} 🪙</button>`; container.appendChild(div); });
+    gears.forEach(g => { const lvl = saveData.equipment[g.id], cost = 25 * (lvl + 1); const div = document.createElement('div'); div.className = 'shop-item'; div.innerHTML = `<h3 style="font-size:1.5rem">${g.icon}</h3><h3>${g.name} (Lv.${lvl})</h3><p>${g.desc}</p><button class="btn" style="font-size:0.85rem;" onclick="upgradeEquipment('${g.id}', ${cost})">${cost} 🪙</button>`; container.appendChild(div); });
 }
 function upgradeEquipment(id, cost) { if(saveData.coins >= cost) { saveData.coins -= cost; saveData.equipment[id]++; save(); renderArmory(); } else alert('코인이 부족합니다!'); }
 
