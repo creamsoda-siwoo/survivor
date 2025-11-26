@@ -1,9 +1,14 @@
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="keywords" content="잎코, 서바이벌, 잎코 서바이벌, 잎코 서바이버, ifko, ifko survivor">
+    <meta name="description" content="IFKO SURVIVOR - 잎코와 함께하는 로그라이크 서바이벌 게임. 다양한 무기와 스킬로 적들을 물리치고 생존하세요!">
+    <meta name="author" content="IFKO">
+    <meta property="og:title" content="IFKO SURVIVOR">
+    <meta property="og:description" content="잎코 서바이벌 - 로그라이크 슈팅 액션">
+    <meta property="og:type" content="website">
     <title>IFKO SURVIVOR</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌌</text></svg>">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Exo+2:wght@400;700;900&display=swap" rel="stylesheet">
@@ -510,10 +515,10 @@
             
             <div id="gacha-buttons" style="display:flex; flex-direction:column; gap:15px;">
                 <button id="gacha-roll-btn" class="btn" onclick="rollGacha()">
-                    <div>유물 뽑기</div><div style="font-size:0.8rem; opacity:0.8">300 🪙</div>
+                    <div>유물 뽑기</div><div style="font-size:0.8rem; opacity:0.8">150 🪙</div>
                 </button>
                 <button id="skin-roll-btn" class="btn btn-accent" onclick="rollSkinGacha()">
-                    <div>스킨 뽑기</div><div style="font-size:0.8rem; opacity:0.8">1000 🪙</div>
+                    <div>스킨 뽑기</div><div style="font-size:0.8rem; opacity:0.8">500 🪙</div>
                 </button>
             </div>
             <button class="btn btn-secondary" style="margin-top:20px;" onclick="closeGacha()">뒤로가기</button>
@@ -588,17 +593,17 @@ const CANVAS_H = window.innerHeight;
 let ZOOM = 0.75; 
 const BOSS_SPAWN_TIME = 60; 
 const BOSS_RESPAWN_DELAY = 60 * 60; 
-const SHOP_BASE_COST = 50;
-const GACHA_COST = 300;
-const SKIN_COST = 1000;
+const SHOP_BASE_COST = 25; // Decreased from 50
+const GACHA_COST = 150; // Decreased from 300
+const SKIN_COST = 500; // Decreased from 1000
 
 // --- Definitions ---
 const CLASSES = [
     { id: 'soldier', name: '솔저', desc: '균형 잡힌 전투 요원', stats: { hp: 0, dmg: 0, spd: 0, cd: 0 }, cost: 0, icon: '🪖' },
-    { id: 'guardian', name: '가디언', desc: '체력 +50, 이동속도 -10%', stats: { hp: 50, dmg: 0, spd: -0.5, cd: 0 }, cost: 1000, icon: '🛡️' },
-    { id: 'assassin', name: '어쌔신', desc: '공격력 +30%, 체력 -30', stats: { hp: -30, dmg: 0.3, spd: 1.0, cd: 0 }, cost: 2000, icon: '🗡️' },
-    { id: 'mage', name: '아크메이지', desc: '쿨타임 -10%, 체력 -20', stats: { hp: -20, dmg: 0.1, spd: 0, cd: 0.1 }, cost: 3000, icon: '🔮' },
-    { id: 'engineer', name: '엔지니어', desc: '지속시간 +20%, 크기 +10%', stats: { hp: 10, dmg: 0, spd: 0, cd: 0 }, cost: 4000, icon: '🔧' }
+    { id: 'guardian', name: '가디언', desc: '체력 +50, 이동속도 -10%', stats: { hp: 50, dmg: 0, spd: -0.5, cd: 0 }, cost: 500, icon: '🛡️' },
+    { id: 'assassin', name: '어쌔신', desc: '공격력 +30%, 체력 -30', stats: { hp: -30, dmg: 0.3, spd: 1.0, cd: 0 }, cost: 1000, icon: '🗡️' },
+    { id: 'mage', name: '아크메이지', desc: '쿨타임 -10%, 체력 -20', stats: { hp: -20, dmg: 0.1, spd: 0, cd: 0.1 }, cost: 1500, icon: '🔮' },
+    { id: 'engineer', name: '엔지니어', desc: '지속시간 +20%, 크기 +10%', stats: { hp: 10, dmg: 0, spd: 0, cd: 0 }, cost: 2000, icon: '🔧' }
 ];
 
 const ULTIMATES = [
