@@ -4,8 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>IFKO SURVIVOR: EVOLUTION</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>">
+    <title>IFKO SURVIVOR: COSMIC WARS</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌌</text></svg>">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Exo+2:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -125,6 +125,14 @@
         #boss-name { color: #bc13fe; font-weight: 900; font-size: 1rem; margin-bottom: 5px; letter-spacing: 3px; text-shadow: 0 0 10px #bc13fe; }
         #boss-hp-container { width: 100%; height: 20px; background: rgba(0,0,0,0.8); border: 2px solid #4a0b63; border-radius: 4px; overflow: hidden; }
         #boss-hp-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #9d00ff, #bc13fe); box-shadow: 0 0 10px #9d00ff; }
+
+        /* Event HUD */
+        #event-hud {
+            position: absolute; top: 150px; width: 100%; text-align: center;
+            font-size: 1.5rem; font-weight: 900; color: #ffd700;
+            text-shadow: 0 0 10px #ff3300; display: none; z-index: 35;
+            animation: pulse 1s infinite;
+        }
 
         /* Common Menu Styles */
         .menu-screen {
@@ -282,6 +290,11 @@
             position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
             color: rgba(255,255,255,0.3); font-size: 0.7rem; pointer-events: none; letter-spacing: 1px;
         }
+        #zoom-indicator {
+            position: absolute; top: 80px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 10px;
+            font-size: 0.8rem; opacity: 0; transition: opacity 0.5s; pointer-events: none;
+        }
 
         /* Class & Ultimate Selection */
         .class-badge { font-size: 0.7rem; background: #333; color: #fff; padding: 2px 6px; border-radius: 4px; margin-top: 5px; }
@@ -297,12 +310,26 @@
         .ult-card.selected { border-color: var(--accent); background: rgba(255,0,153,0.1); }
         .ult-icon-l { font-size: 2.5rem; }
 
+        /* Achievement Item */
+        .achieve-item {
+            background: rgba(0,0,0,0.5); border: 1px solid #444; border-radius: 8px;
+            padding: 10px; display: flex; align-items: center; justify-content: space-between;
+            width: 100%; opacity: 0.6;
+        }
+        .achieve-item.completed { border-color: var(--gold); background: rgba(255,215,0,0.1); opacity: 1; }
+        .achieve-info { text-align: left; }
+        .achieve-title { font-weight: bold; font-size: 0.9rem; color: #fff; }
+        .achieve-desc { font-size: 0.75rem; color: #aaa; }
+        .achieve-reward { font-weight: bold; color: var(--gold); font-size: 0.8rem; }
+        .btn-claim { padding: 5px 10px; font-size: 0.7rem; min-width: auto; background: var(--gold); color: #000; }
+        .btn-claim:disabled { background: #555; color: #888; cursor: default; box-shadow: none; transform: none; }
+
     </style>
 </head>
 <body>
 
     <div id="game-container">
-        <div id="credits">v10.0 EVOLUTION UPDATE</div>
+        <div id="credits">v11.0 COSMIC WARS</div>
         <div class="scanlines"></div>
         <div class="vignette"></div>
         <canvas id="gameCanvas"></canvas>
@@ -313,6 +340,7 @@
         <div id="joystick-knob"></div>
         <div id="dash-hint">SPACE / DOUBLE TAP : DASH</div>
         <div id="scroll-hint">MOUSE WHEEL : ZOOM</div>
+        <div id="zoom-indicator">x1.0</div>
 
         <!-- HUD -->
         <div id="hud" class="ui-layer hidden">
@@ -340,6 +368,7 @@
             </div>
             
             <div id="timer">00:00</div>
+            <div id="event-hud">METEOR SHOWER</div>
 
             <div id="boss-hud">
                 <div id="boss-name">⚠️ THE HEXAGON ⚠️</div>
@@ -404,6 +433,15 @@
             <button class="btn btn-secondary" style="margin-top:20px;" onclick="closeSkillScreen()">뒤로가기</button>
         </div>
 
+        <!-- Achievements Screen -->
+        <div id="achieve-screen" class="ui-layer hidden interactive menu-screen">
+            <div class="currency-display">🪙 <span id="achieve-currency">0</span></div>
+            <h1 class="screen-title">ACHIEVEMENTS</h1>
+            <p class="screen-subtitle">임무 달성 및 보상</p>
+            <div class="list-layout" id="achieve-container" style="display:flex; flex-direction:column; gap:10px;"></div>
+            <button class="btn btn-secondary" style="margin-top:20px;" onclick="closeAchieveScreen()">뒤로가기</button>
+        </div>
+
         <!-- Gacha Screen -->
         <div id="gacha-screen" class="ui-layer hidden interactive menu-screen">
             <div class="currency-display">🪙 <span id="gacha-currency">0</span></div>
@@ -446,8 +484,8 @@
 
         <!-- Start Screen -->
         <div id="start-screen" class="ui-layer menu-screen interactive" style="display:flex;">
-            <h1 class="screen-title" style="font-size:3.5rem; margin-bottom:10px; color:var(--primary);">IFKO<br><span style="font-size:2.5rem; color:#fff;">EVOLUTION</span></h1>
-            <p class="screen-subtitle" style="margin-bottom:40px;">PLANET : IFKO-X10</p>
+            <h1 class="screen-title" style="font-size:3.5rem; margin-bottom:10px; color:var(--primary);">IFKO<br><span style="font-size:2.5rem; color:#fff;">COSMIC WARS</span></h1>
+            <p class="screen-subtitle" style="margin-bottom:40px;">PLANET : IFKO-X11</p>
             
             <button class="btn" style="width:220px; height:60px; font-size:1.3rem; margin-bottom:30px; box-shadow: 0 0 20px var(--primary);" onclick="startGame()">MISSION START</button>
             
@@ -457,10 +495,11 @@
                 <button class="btn btn-secondary" onclick="openArmory()">무기고</button>
                 <button class="btn btn-secondary" onclick="openShop()">연구소</button>
                 <button class="btn btn-secondary" onclick="openGacha()">보급소</button>
-                <button class="btn btn-secondary" onclick="openArtifactScreen()">도감</button>
+                <button class="btn btn-secondary" onclick="openAchieveScreen()">업적</button>
                 <button class="btn btn-secondary" onclick="openWardrobe()">옷장</button>
                 <button class="btn btn-secondary" onclick="openSettings()">설정</button>
             </div>
+            <div style="position:absolute; bottom:20px; color:#555; font-size:0.7rem;">v11.0.2</div>
         </div>
 
         <!-- Settings Screen -->
@@ -487,8 +526,8 @@
 
 <script>
 /**
- * IFKO SURVIVOR v10.0 - Evolution Update
- * Features: Scroll Zoom, Hidden Weapons, Evolution System, Expanded Upgrades, Ultimate Switching
+ * IFKO SURVIVOR v11.0 - Cosmic Wars Update
+ * Features: Parallax Stars, Achievements, New Enemies (Shooter, Volatile), Events, Plasma Shield
  */
 
 // --- Constants ---
@@ -535,9 +574,7 @@ const ARTIFACTS = [
     { id: 'thorn', name: '가시 갑옷', desc: '피격 시 반사 피해', icon: '🌵' }
 ];
 
-// Expanded Upgrade List (System Upgrades)
 const UPGRADES = [
-    // Weapons
     { id: 'blaster', name: '블래스터', desc: '기본 사격 무기', type: 'WEAPON', icon: '🔫' },
     { id: 'orbit', name: '위성 포격', desc: '주변을 도는 에너지체', type: 'WEAPON', icon: '🪐' },
     { id: 'field', name: '전기장', desc: '주변 지속 피해', type: 'WEAPON', icon: '⚡' },
@@ -546,9 +583,9 @@ const UPGRADES = [
     { id: 'gravity', name: '중력 붕괴', desc: '적을 모으는 블랙홀', type: 'WEAPON', icon: '🌌' },
     { id: 'mines', name: '양자 지뢰', desc: '설치형 지뢰', type: 'WEAPON', icon: '💣' },
     { id: 'drone', name: '자율 드론', desc: '호위 드론', type: 'WEAPON', icon: '🚁' },
+    { id: 'plasma', name: '플라즈마 쉴드', desc: '회전하는 방어막', type: 'WEAPON', icon: '🛡️' },
     { id: 'voidwalker', name: '보이드 워커', desc: '[히든] 공허의 틈을 엽니다', type: 'HIDDEN', icon: '🧿', weight: 0.05 },
     
-    // Stats (Original + New)
     { id: 'heal', name: '긴급 수리', desc: '체력 30% 회복', type: 'STAT', icon: '❤️' },
     { id: 'giant', name: '거대화', desc: '투사체 크기 +15%', type: 'STAT', icon: '🐘' },
     { id: 'multishot', name: '멀티샷', desc: '투사체 개수 +1 (일부 무기)', type: 'STAT', icon: '🍒' },
@@ -562,12 +599,20 @@ const UPGRADES = [
     { id: 'greed', name: '채굴자', desc: '골드 획득 +20%', type: 'STAT', icon: '💰' }
 ];
 
-// Evolution Recipes
 const EVOLUTIONS = [
     { weapon: 'blaster', passive: 'sniper', evolveTo: 'exterminator', name: '엑스터미네이터', desc: '블래스터 진화: 고속 관통 레이저', icon: '👹' },
     { weapon: 'orbit', passive: 'area', evolveTo: 'blackhole', name: '이벤트 호라이즌', desc: '위성 진화: 적을 갈아버리는 블랙홀 링', icon: '⚫' },
     { weapon: 'tesla', passive: 'multishot', evolveTo: 'thundergod', name: '뇌신', desc: '테슬라 진화: 화면 전체 타격', icon: '⚡' },
     { weapon: 'missile', passive: 'giant', evolveTo: 'nuke', name: '팻 맨', desc: '미사일 진화: 전술 핵무기', icon: '☢️' }
+];
+
+const ACHIEVEMENTS = [
+    { id: 'k100', name: '초보 사냥꾼', desc: '누적 100킬 달성', reward: 500, check: (s) => s.totalKills >= 100 },
+    { id: 'k1000', name: '베테랑', desc: '누적 1000킬 달성', reward: 1500, check: (s) => s.totalKills >= 1000 },
+    { id: 'k5000', name: '학살자', desc: '누적 5000킬 달성', reward: 5000, check: (s) => s.totalKills >= 5000 },
+    { id: 'c1000', name: '수집가', desc: '누적 1000코인 획득', reward: 500, check: (s) => s.totalCoins >= 1000 },
+    { id: 'c10000', name: '부자', desc: '누적 10000코인 획득', reward: 3000, check: (s) => s.totalCoins >= 10000 },
+    { id: 't600', name: '생존자', desc: '최대 10분 생존', reward: 2000, check: (s) => s.maxTime >= 600 }
 ];
 
 // --- Persistent Save Data ---
@@ -587,18 +632,17 @@ const DEFAULT_DATA = {
     },
     equipment: { weapon: 0, armor: 0, boots: 0 },
     artifacts: {},
-    stats: { totalKills: 0, totalTime: 0, totalCoins: 0 }
+    stats: { totalKills: 0, totalTime: 0, totalCoins: 0, maxTime: 0 },
+    achievements: [] // list of claimed achievement IDs
 };
 
 let saveData = loadData();
 
 function loadData() {
-    const d = localStorage.getItem('ifko_evo_v10');
+    const d = localStorage.getItem('ifko_evo_v11');
     if(!d) return JSON.parse(JSON.stringify(DEFAULT_DATA));
     const parsed = JSON.parse(d);
-    // Deep merge for safety
     const newData = JSON.parse(JSON.stringify(DEFAULT_DATA));
-    // Simple merge logic
     for (let key in parsed) {
         if (typeof parsed[key] === 'object' && !Array.isArray(parsed[key])) {
             newData[key] = { ...newData[key], ...parsed[key] };
@@ -610,7 +654,7 @@ function loadData() {
 }
 
 function save() {
-    localStorage.setItem('ifko_evo_v10', JSON.stringify(saveData));
+    localStorage.setItem('ifko_evo_v11', JSON.stringify(saveData));
 }
 
 function resetData() {
@@ -634,6 +678,8 @@ const state = {
     player: null, enemies: [], particles: [], items: [], projectiles: [], 
     boss: null, bossRespawnTimer: 0, bossLevel: 1,
     popups: [], shockwaves: [], gravityWells: [], mines: [], drones: [], voidZones: [],
+    event: { type: null, timer: 0 },
+    stars: [],
     weapons: {
         blaster: { level: 1, cd: 0, maxCd: 40, evolved: false },
         orbit: { level: 0, cd: 0, angle: 0, count: 1, evolved: false },
@@ -643,7 +689,8 @@ const state = {
         gravity: { level: 0, cd: 0, maxCd: 300, evolved: false },
         mines: { level: 0, cd: 0, maxCd: 120, evolved: false },
         drone: { level: 0, cd: 0, maxCd: 40, evolved: false },
-        voidwalker: { level: 0, cd: 0, maxCd: 60 } // Hidden
+        plasma: { level: 0, angle: 0, count: 1 },
+        voidwalker: { level: 0, cd: 0, maxCd: 60 }
     },
     sessionStats: { 
         sizeMult: 1, projectileCount: 0, projectileSpeed: 1, 
@@ -654,6 +701,37 @@ const state = {
 };
 
 // --- Classes ---
+
+class Star {
+    constructor() {
+        this.reset();
+        this.x = Math.random() * CANVAS_W;
+        this.y = Math.random() * CANVAS_H;
+    }
+    reset() {
+        this.z = Math.random() * 2 + 0.5; // Depth
+        this.size = Math.random() * 1.5;
+        // Spawn outside usually
+        const angle = Math.random() * Math.PI * 2;
+        this.x = CANVAS_W/2 + Math.cos(angle) * CANVAS_W;
+        this.y = CANVAS_H/2 + Math.sin(angle) * CANVAS_H;
+    }
+    update(px, py) {
+        // Parallax effect based on player movement
+        this.x -= (px * 0.1) / this.z;
+        this.y -= (py * 0.1) / this.z;
+        
+        // Wrap around
+        if (this.x < 0) this.x += CANVAS_W;
+        if (this.x > CANVAS_W) this.x -= CANVAS_W;
+        if (this.y < 0) this.y += CANVAS_H;
+        if (this.y > CANVAS_H) this.y -= CANVAS_H;
+    }
+    draw(ctx) {
+        ctx.fillStyle = `rgba(255,255,255,${0.3 + 0.5/this.z})`;
+        ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI*2); ctx.fill();
+    }
+}
 
 class Player {
     constructor() {
@@ -692,7 +770,6 @@ class Player {
         this.revives = shopRevive;
         this.evasion = shopEvasion;
         
-        // Initial session stats from shop
         state.sessionStats.armor = shopArmor;
         state.sessionStats.knockbackMult = 1 + shopKnockback;
 
@@ -703,11 +780,12 @@ class Player {
     }
 
     update() {
-        // Regen
         if (this.regenRate > 0 && state.time % 180 === 0 && this.hp < this.maxHp) {
             this.hp = Math.min(this.hp + this.regenRate, this.maxHp);
             createPopup('+', this.x, this.y - 20, '#0f0');
         }
+
+        let moveX = 0, moveY = 0;
 
         if (this.dashTime > 0) {
             this.x += this.dashVec.x * 15; this.y += this.dashVec.y * 15;
@@ -728,8 +806,15 @@ class Player {
                 else if (len > 0 && !state.joystick.active) { dx /= len; dy /= len; } 
             }
 
-            if (dx !== 0 || dy !== 0) { this.x += dx * this.speed; this.y += dy * this.speed; }
+            if (dx !== 0 || dy !== 0) { 
+                moveX = dx * this.speed; moveY = dy * this.speed;
+                this.x += moveX; this.y += moveY; 
+            }
         }
+        
+        // Update parallax stars
+        state.stars.forEach(s => s.update(moveX || 0, moveY || 0));
+
         if (this.dashCd > 0) this.dashCd--;
         if (this.invuln > 0) this.invuln--;
     }
@@ -761,9 +846,7 @@ class Player {
             return;
         }
 
-        // Apply Armor
         amt = Math.max(1, amt - state.sessionStats.armor);
-
         this.hp -= amt;
         this.invuln = 30;
         const thorns = saveData.artifacts.thorn || 0;
@@ -796,7 +879,6 @@ class Player {
         ctx.save();
         ctx.translate(this.x, this.y);
         
-        // Draw Dash Indicator
         if(this.dashCd > 0) {
             ctx.beginPath(); ctx.arc(0, 0, this.size + 8, 0, (Math.PI * 2) * (1 - this.dashCd/(120*(1-this.cdReduc)*state.sessionStats.dashCdMult)));
             ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 2; ctx.stroke();
@@ -846,12 +928,17 @@ class Player {
 class Enemy {
     constructor(type, x, y) {
         this.type = type; this.x = x; this.y = y; this.pushX = 0; this.pushY = 0; this.frozen = 0;
+        this.shootTimer = 0;
+        this.volatileTimer = 0;
+        
         const scaler = 1 + (state.time / 180);
         if (type === 'SQUARE') { this.hp = 10*scaler; this.speed = 1.5; this.size = 15; this.color = '#ff3333'; this.dmg = 10; }
         else if (type === 'TRIANGLE') { this.hp = 5*scaler; this.speed = 2.5; this.size = 12; this.color = '#ffcc00'; this.dmg = 15; }
         else if (type === 'PENTAGON') { this.hp = 20*scaler; this.speed = 1.0; this.size = 20; this.color = '#33ff33'; this.dmg = 20; }
         else if (type === 'RHOMBUS') { this.hp = 15*scaler; this.speed = 4.0; this.size = 14; this.color = '#00ccff'; this.dmg = 15; }
         else if (type === 'OCTAGON') { this.hp = 80*scaler; this.speed = 0.8; this.size = 30; this.color = '#9900ff'; this.dmg = 30; }
+        else if (type === 'SHOOTER') { this.hp = 15*scaler; this.speed = 1.2; this.size = 18; this.color = '#ff5500'; this.dmg = 15; }
+        else if (type === 'VOLATILE') { this.hp = 8*scaler; this.speed = 3.5; this.size = 12; this.color = '#550000'; this.dmg = 50; }
         else if (type === 'SWARM') { this.hp = 2*scaler; this.speed = 3.0; this.size = 8; this.color = '#bc13fe'; this.dmg = 5; }
         else { this.hp = 10; this.speed = 1; this.size = 10; this.color = '#fff'; this.dmg = 5; }
         
@@ -864,7 +951,40 @@ class Enemy {
         this.x += this.pushX; this.y += this.pushY; this.pushX *= 0.9; this.pushY *= 0.9;
         
         const dx = player.x - this.x, dy = player.y - this.y, dist = Math.sqrt(dx*dx + dy*dy);
-        if (dist > 0) { this.x += (dx / dist) * this.speed; this.y += (dy / dist) * this.speed; }
+        
+        if (this.type === 'SHOOTER') {
+            // Keep distance
+            if (dist > 300) {
+                 this.x += (dx / dist) * this.speed; this.y += (dy / dist) * this.speed;
+            } else if (dist < 200) {
+                 this.x -= (dx / dist) * this.speed; this.y -= (dy / dist) * this.speed;
+            }
+            this.shootTimer++;
+            if (this.shootTimer > 120) {
+                this.shootTimer = 0;
+                // Shoot projectile at player
+                state.projectiles.push(new Projectile(this.x, this.y, (dx/dist)*5, (dy/dist)*5, 10, '#ff3333', 100, 5, false));
+            }
+        } else if (this.type === 'VOLATILE') {
+            this.x += (dx / dist) * this.speed; this.y += (dy / dist) * this.speed;
+            if (dist < 80) {
+                this.volatileTimer++;
+                this.color = this.volatileTimer % 10 < 5 ? '#ff0000' : '#fff';
+                if (this.volatileTimer > 30) {
+                    createExplosion(this.x, this.y, '#ff0000', 20);
+                    if (dist < 80) player.takeDamage(this.dmg);
+                    removeEnemy(this);
+                }
+            } else {
+                this.volatileTimer = 0;
+                this.color = '#550000';
+            }
+        } else {
+            // Normal movement
+            if (dist > 0) { this.x += (dx / dist) * this.speed; this.y += (dy / dist) * this.speed; }
+        }
+        
+        // Collision with player
         if (dist < this.size + player.size) { 
             player.takeDamage(this.dmg); 
             this.pushX = -(dx/dist)*10; this.pushY = -(dy/dist)*10; 
@@ -898,10 +1018,22 @@ class Enemy {
         const rand = Math.random();
         const luck = saveData.upgrades.luck || 0;
         
+        // Event check: Gold Rush
+        const isGoldRush = state.event.type === 'GOLDRUSH';
+
         if (rand < 0.005 * (1+luck*0.2)) state.items.push(new Item(this.x, this.y, 0, 'BOMB'));
         else if (rand < 0.01 * (1+luck*0.2)) state.items.push(new Item(this.x, this.y, 0, 'MAGNET'));
         else if (rand < 0.02 * (1+luck*0.2)) state.items.push(new Item(this.x, this.y, 0, 'HEAL'));
-        else state.items.push(new Item(this.x, this.y, 2, 'XP')); 
+        else {
+             // Drop Coin or XP
+             if (isGoldRush || rand < 0.05 * (1+luck*0.1)) {
+                 let it = new Item(this.x, this.y, 10, 'XP');
+                 it.isCoin = true; it.color = '#ffd700'; 
+                 state.items.push(it);
+             } else {
+                 state.items.push(new Item(this.x, this.y, 2, 'XP')); 
+             }
+        }
         
         state.kills++; 
         saveData.stats.totalKills++;
@@ -910,6 +1042,7 @@ class Enemy {
         ctx.fillStyle = this.color; ctx.shadowBlur = 10; ctx.shadowColor = this.color; ctx.beginPath();
         if (this.type === 'SQUARE') ctx.rect(this.x - this.size, this.y - this.size, this.size*2, this.size*2);
         else if (this.type === 'TRIANGLE') { ctx.moveTo(this.x, this.y - this.size); ctx.lineTo(this.x + this.size, this.y + this.size); ctx.lineTo(this.x - this.size, this.y + this.size); }
+        else if (this.type === 'SHOOTER') { ctx.moveTo(this.x - this.size, this.y - this.size); ctx.lineTo(this.x + this.size, this.y); ctx.lineTo(this.x - this.size, this.y + this.size); }
         else ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
         ctx.fill(); ctx.shadowBlur = 0;
     }
@@ -943,11 +1076,8 @@ class Item {
         else if (type === 'MAGNET') { this.color = '#0055ff'; this.size = 8; }
         else if (type === 'BOMB') { this.color = '#ffaa00'; this.size = 8; }
         else { 
-            this.isCoin = Math.random() < 0.25; 
-            if (this.isCoin) { 
-                this.color = '#ffd700'; 
-                this.val = Math.floor(50 * (1 + saveData.upgrades.greed * 0.1) * luckMult * state.sessionStats.greedMult); 
-            } else { this.color = '#33ccff'; } 
+            this.isCoin = false;
+            this.color = '#33ccff';
         }
     }
     update(player) {
@@ -962,7 +1092,12 @@ class Item {
             if (this.type === 'HEAL') { player.hp = Math.min(player.hp + 30, player.maxHp); createPopup("+30 HP", this.x, this.y, '#f00'); }
             else if (this.type === 'MAGNET') { state.items.forEach(i => { if(i.type === 'XP' || i.isCoin) { i.x = player.x; i.y = player.y; } }); createPopup("MAGNET!", this.x, this.y, '#00f'); }
             else if (this.type === 'BOMB') { state.enemies.forEach(e => { if(!(e instanceof Boss)) e.die(); else e.takeDamage(500); }); createExplosion(player.x, player.y, '#fff', 50); createPopup("BOOM!", this.x, this.y, '#fa0'); }
-            else if (this.isCoin) { state.coins += this.val; saveData.stats.totalCoins += this.val; } else { addXp(this.val); }
+            else if (this.isCoin) { 
+                const gain = Math.floor(10 * (1 + saveData.upgrades.greed * 0.1) * state.sessionStats.greedMult);
+                state.coins += gain; 
+                saveData.stats.totalCoins += gain; 
+                createPopup(`+${gain}🪙`, this.x, this.y, '#ffd700');
+            } else { addXp(this.val); }
             return true;
         } return false;
     }
@@ -1048,9 +1183,14 @@ class Particle {
 }
 
 class PopupText {
-    constructor(text, x, y, color) { this.text = text; this.x = x; this.y = y; this.color = color; this.life = 30; }
-    update() { this.y -= 1; this.life--; return this.life <= 0; }
-    draw(ctx) { ctx.fillStyle = this.color; ctx.font = "12px 'Exo 2'"; ctx.fillText(this.text, this.x, this.y); }
+    constructor(text, x, y, color) { this.text = text; this.x = x; this.y = y; this.color = color; this.life = 40; this.vy = -1; }
+    update() { this.y += this.vy; this.vy *= 0.9; this.life--; return this.life <= 0; }
+    draw(ctx) { 
+        ctx.fillStyle = this.color; ctx.font = "bold 16px 'Exo 2'"; 
+        ctx.strokeStyle = 'black'; ctx.lineWidth = 2;
+        ctx.strokeText(this.text, this.x, this.y);
+        ctx.fillText(this.text, this.x, this.y); 
+    }
 }
 
 class Shockwave {
@@ -1099,7 +1239,6 @@ function updateWeapons() {
             const ox = p.x + Math.cos(theta)*dist*sizeMult, oy = p.y + Math.sin(theta)*dist*sizeMult;
             
             if (w.orbit.evolved) {
-                // Black Hole effect
                 if(state.time % 5 === 0) {
                      state.particles.push(new Particle(ox, oy, '#000', 1, 5, 8 * sizeMult * areaMult));
                      createExplosion(ox, oy, '#330066', 1, 2);
@@ -1130,7 +1269,6 @@ function updateWeapons() {
     if (w.tesla.level > 0) { 
         if (w.tesla.cd <= 0) { 
             if (w.tesla.evolved) {
-                // Global Strike
                 createPopup("THUNDER!", p.x, p.y-50, '#00ffff');
                 for(let i=0; i<10; i++) {
                     if(state.enemies.length > 0) {
@@ -1191,7 +1329,28 @@ function updateWeapons() {
         } else w.drone.cd--;
     }
 
-    // Hidden Weapon: Void Walker
+    // Plasma Shield
+    if (w.plasma.level > 0) {
+        w.plasma.angle += 0.08;
+        const cnt = 1 + Math.floor(w.plasma.level / 3) + extraProj;
+        for(let i=0; i<cnt; i++) {
+             const ang = w.plasma.angle + (Math.PI*2 * i / cnt);
+             const dist = 50 * sizeMult * areaMult;
+             const px = p.x + Math.cos(ang) * dist;
+             const py = p.y + Math.sin(ang) * dist;
+             
+             state.particles.push(new Particle(px, py, '#00ffaa', 1, 2, 4 * sizeMult));
+             
+             // Check collisions
+             for(const e of state.enemies) {
+                 if (Math.hypot(e.x - px, e.y - py) < 20 * sizeMult) {
+                     e.takeDamage(2 + w.plasma.level, 10, p.x, p.y);
+                 }
+                 // Reflect projectiles?
+             }
+        }
+    }
+
     if (w.voidwalker.level > 0) {
         if (w.voidwalker.cd <= 0) {
             state.voidZones.push(new VoidZone(p.x + (Math.random()-0.5)*400, p.y + (Math.random()-0.5)*400));
@@ -1213,14 +1372,12 @@ function updateWeapons() {
         } 
     }
     
-    // Active Ultimate Effects
     if (state.ult.activeTime > 0) {
         state.ult.activeTime--;
         if (saveData.currentUlt === 'berserk') {
              if(state.ult.activeTime % 5 === 0) createExplosion(p.x, p.y, '#ff0000', 1);
         }
         if (state.ult.activeTime <= 0) {
-            // End effects
             if(saveData.currentUlt === 'berserk') { p.speed = p.baseSpeed; p.dmgMult /= 3; }
             if(saveData.currentUlt === 'chrono') { state.enemies.forEach(e => e.frozen = 0); p.speed = p.baseSpeed; }
         }
@@ -1271,6 +1428,48 @@ function useUltimate() {
     }
 }
 
+// Events Logic
+function updateEvents() {
+    if (state.event.type) {
+        state.event.timer--;
+        
+        if (state.event.type === 'METEOR') {
+            if (state.event.timer % 30 === 0) {
+                // Spawn Meteor
+                const x = state.player.x + (Math.random()-0.5)*800;
+                const y = state.player.y + (Math.random()-0.5)*800;
+                state.projectiles.push(new Projectile(x, y-500, 0, 10, 50, '#ff0000', 60, 20, false)); // Falling meteor logic simplified as projectile
+                // Actually better to have immediate impact or simple warning
+                createExplosion(x, y, '#ff0000', 10);
+                state.enemies.forEach(e => {
+                    if (Math.hypot(e.x - x, e.y - y) < 100) e.takeDamage(100);
+                });
+                state.player.takeDamage(5); // Player also takes damage if hit! (Simulated hit)
+            }
+        }
+        
+        if (state.event.timer <= 0) {
+            state.event.type = null;
+            document.getElementById('event-hud').style.display = 'none';
+        }
+    } else {
+        // Random Event Trigger
+        if (state.time > 600 && Math.random() < 0.0005) {
+             triggerEvent(Math.random() < 0.5 ? 'METEOR' : 'GOLDRUSH');
+        }
+    }
+}
+
+function triggerEvent(type) {
+    state.event.type = type;
+    state.event.timer = 600; // 10 seconds
+    const hud = document.getElementById('event-hud');
+    hud.style.display = 'block';
+    hud.innerText = type === 'METEOR' ? '⚠️ METEOR SHOWER ⚠️' : '💰 GOLD RUSH 💰';
+    hud.style.color = type === 'METEOR' ? '#ff3333' : '#ffd700';
+    createPopup("EVENT START!", state.player.x, state.player.y - 100, '#fff');
+}
+
 const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d');
 function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
 window.addEventListener('resize', resize); resize();
@@ -1278,6 +1477,11 @@ window.addEventListener('wheel', (e) => {
     e.preventDefault();
     ZOOM += e.deltaY * -0.001;
     ZOOM = Math.max(0.3, Math.min(2.0, ZOOM));
+    const indicator = document.getElementById('zoom-indicator');
+    indicator.innerText = `x${ZOOM.toFixed(1)}`;
+    indicator.style.opacity = 1;
+    clearTimeout(window.zoomTimer);
+    window.zoomTimer = setTimeout(() => indicator.style.opacity = 0, 1000);
 }, { passive: false });
 
 function startGame() {
@@ -1295,6 +1499,7 @@ function startGame() {
         gravity: { level: 0, cd: 0, maxCd: 300, evolved: false },
         mines: { level: 0, cd: 0, maxCd: 120, evolved: false },
         drone: { level: 0, cd: 0, maxCd: 40, evolved: false },
+        plasma: { level: 0, angle: 0, count: 1 },
         voidwalker: { level: 0, cd: 0, maxCd: 60 }
     };
     
@@ -1310,6 +1515,10 @@ function startGame() {
     state.boss = null; state.bossLevel = 1;
     state.keys = { w: false, a: false, s: false, d: false, space: false, ArrowUp: false, ArrowLeft: false, ArrowDown: false, ArrowRight: false };
     
+    // Parallax Stars
+    state.stars = [];
+    for(let i=0; i<100; i++) state.stars.push(new Star());
+
     updateHUD(); requestAnimationFrame(loop);
 }
 
@@ -1327,6 +1536,8 @@ function loop() {
                 createPopup("WARNING!", state.player.x, state.player.y - 50, '#ff00ff');
             }
         }
+        
+        updateEvents();
 
         state.player.update();
         state.drones.forEach(d => d.update());
@@ -1334,18 +1545,29 @@ function loop() {
         for (let i = state.projectiles.length - 1; i >= 0; i--) { 
             const p = state.projectiles[i]; 
             if(p.update()) { state.projectiles.splice(i, 1); continue; } 
-            let hit = false; 
-            for (const e of state.enemies) { 
-                if (p.pierce && p.hitList.includes(e)) continue; 
-                if (Math.hypot(e.x - p.x, e.y - p.y) < e.size + p.size) { 
-                    if(e.takeDamage(p.dmg, p.knockback, p.x, p.y)) removeEnemy(e); 
-                    hit = true; 
-                    if(p.onHit) p.onHit();
-                    createExplosion(p.x, p.y, p.color, 3); 
-                    if (!p.pierce) break; else p.hitList.push(e); 
+            let hit = false;
+            // Check Player Collision (Enemy Projectiles)
+            if (p.color === '#ff3333') {
+                if (Math.hypot(state.player.x - p.x, state.player.y - p.y) < state.player.size + p.size) {
+                    state.player.takeDamage(p.dmg);
+                    createExplosion(p.x, p.y, p.color, 3);
+                    state.projectiles.splice(i, 1);
+                    continue;
+                }
+            } else {
+                // Check Enemy Collision
+                for (const e of state.enemies) { 
+                    if (p.pierce && p.hitList.includes(e)) continue; 
+                    if (Math.hypot(e.x - p.x, e.y - p.y) < e.size + p.size) { 
+                        if(e.takeDamage(p.dmg, p.knockback, p.x, p.y)) removeEnemy(e); 
+                        hit = true; 
+                        if(p.onHit) p.onHit();
+                        createExplosion(p.x, p.y, p.color, 3); 
+                        if (!p.pierce) break; else p.hitList.push(e); 
+                    } 
                 } 
-            } 
-            if (hit && !p.pierce) state.projectiles.splice(i, 1); 
+                if (hit && !p.pierce) state.projectiles.splice(i, 1); 
+            }
         }
         for (let i = state.mines.length - 1; i >= 0; i--) { if(state.mines[i].update()) state.mines.splice(i, 1); }
         for (let i = state.voidZones.length - 1; i >= 0; i--) { if(state.voidZones[i].update()) state.voidZones.splice(i, 1); }
@@ -1370,11 +1592,14 @@ function loop() {
 
 function render() {
     ctx.fillStyle = '#050508'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw Parallax Stars (Background)
+    state.stars.forEach(s => s.draw(ctx));
+
     if(!state.player) return;
 
     ctx.save(); const cx = canvas.width / 2, cy = canvas.height / 2; 
     
-    // Screen Shake
     if (state.shockwaves.length > 0) {
         const shake = Math.random() * 10 - 5;
         ctx.translate(shake, shake);
@@ -1404,7 +1629,16 @@ function render() {
 function spawnEnemy() {
     const angle = Math.random() * Math.PI * 2, dist = 800 / ZOOM, x = state.player.x + Math.cos(angle) * dist, y = state.player.y + Math.sin(angle) * dist;
     let type = 'SQUARE'; const t = state.time / 60;
-    if (t > 180 && Math.random() < 0.1) type = 'OCTAGON'; else if (t > 120 && Math.random() < 0.2) type = 'RHOMBUS'; else if (t > 60 && Math.random() < 0.3) type = 'PENTAGON'; else if (t > 30 && Math.random() < 0.4) type = 'TRIANGLE';
+    
+    // New Enemy Types Logic
+    const rand = Math.random();
+    if (t > 180 && rand < 0.1) type = 'OCTAGON'; 
+    else if (t > 120 && rand < 0.2) type = 'RHOMBUS'; 
+    else if (t > 90 && rand < 0.1) type = 'SHOOTER';
+    else if (t > 60 && rand < 0.1) type = 'VOLATILE';
+    else if (t > 60 && rand < 0.3) type = 'PENTAGON'; 
+    else if (t > 30 && rand < 0.4) type = 'TRIANGLE';
+
     if (t > 90 && Math.random() < 0.05) for(let i=0; i<10; i++) state.enemies.push(new Enemy('SWARM', x + Math.random()*50, y + Math.random()*50)); else state.enemies.push(new Enemy(type, x, y));
 }
 function spawnBoss() { 
@@ -1435,16 +1669,13 @@ function showUpgradeScreen() {
     state.paused = true; const container = document.getElementById('upgrade-cards'); container.innerHTML = '';
     document.getElementById('upgrade-screen').classList.remove('hidden'); document.getElementById('joystick-zone').classList.add('hidden');
     
-    // Check for Evolutions
     for (const evo of EVOLUTIONS) {
         if (!state.weapons[evo.weapon].evolved && state.weapons[evo.weapon].level >= 5) {
-            // Check if player has the passive (sessionStats or general upgrades logic simplified for gameplay)
-            // Simplified: If you have max level weapon, evolution chance is high
             if (Math.random() < 0.4) {
                 const card = document.createElement('div'); card.className = 'card evolution'; 
                 card.innerHTML = `<div class="card-icon">${evo.icon}</div><div class="card-title">${evo.name}</div><div class="card-desc">${evo.desc}</div><div class="card-type">EVOLUTION</div>`; 
                 card.onclick = () => selectUpgrade(evo.evolveTo); container.appendChild(card); 
-                return; // Only show evolution
+                return;
             }
         }
     }
@@ -1452,7 +1683,6 @@ function showUpgradeScreen() {
     let choices = [];
     const pool = [...UPGRADES];
     
-    // Filter out Hidden unless lucky
     const hiddenChance = (saveData.upgrades.luck || 0) * 0.05 + 0.01;
     
     for(let i=0; i<3; i++) {
@@ -1479,7 +1709,6 @@ function showUpgradeScreen() {
 }
 
 function selectUpgrade(id) {
-    // Stats
     if (id === 'heal') state.player.hp = Math.min(state.player.hp + state.player.maxHp * 0.5, state.player.maxHp);
     else if (id === 'giant') state.sessionStats.sizeMult += 0.15;
     else if (id === 'multishot') state.sessionStats.projectileCount += 1;
@@ -1492,13 +1721,11 @@ function selectUpgrade(id) {
     else if (id === 'pickup') state.sessionStats.pickupRangeMult += 0.3;
     else if (id === 'greed') state.sessionStats.greedMult += 0.2;
     
-    // Evolutions
     else if (id === 'exterminator') { state.weapons.blaster.evolved = true; createPopup("EVOLUTION!", state.player.x, state.player.y, '#ff0099'); }
     else if (id === 'blackhole') { state.weapons.orbit.evolved = true; createPopup("EVOLUTION!", state.player.x, state.player.y, '#ff0099'); }
     else if (id === 'thundergod') { state.weapons.tesla.evolved = true; createPopup("EVOLUTION!", state.player.x, state.player.y, '#ff0099'); }
     else if (id === 'nuke') { state.weapons.missile.evolved = true; createPopup("EVOLUTION!", state.player.x, state.player.y, '#ff0099'); }
     
-    // Weapons
     else if (state.weapons[id]) state.weapons[id].level++;
     
     document.getElementById('upgrade-screen').classList.add('hidden'); document.getElementById('joystick-zone').classList.remove('hidden'); state.paused = false;
@@ -1507,7 +1734,19 @@ function selectUpgrade(id) {
 function togglePause() { if (!state.running) return; state.paused = !state.paused; if (state.paused) { document.getElementById('pause-screen').classList.remove('hidden'); document.getElementById('joystick-zone').classList.add('hidden'); } else { document.getElementById('pause-screen').classList.add('hidden'); document.getElementById('joystick-zone').classList.remove('hidden'); } }
 function quitGame() { saveData.coins += Math.floor(state.coins); save(); state.running = false; showStartScreen(); }
 function showStartScreen() { document.querySelectorAll('.ui-layer').forEach(el => el.classList.add('hidden')); document.getElementById('start-screen').classList.remove('hidden'); document.getElementById('joystick-zone').classList.add('hidden'); }
-function endGame() { state.running = false; document.getElementById('hud').classList.add('hidden'); document.getElementById('joystick-zone').classList.add('hidden'); document.getElementById('game-over-screen').classList.remove('hidden'); const m = Math.floor(state.time / 3600), s = Math.floor((state.time % 3600) / 60); document.getElementById('final-score').innerText = `생존 시간: ${m}:${s}`; document.getElementById('final-coins').innerText = `획득: ${state.coins} 🪙`; saveData.coins += state.coins; save(); }
+function endGame() { 
+    state.running = false; document.getElementById('hud').classList.add('hidden'); document.getElementById('joystick-zone').classList.add('hidden'); document.getElementById('game-over-screen').classList.remove('hidden'); 
+    
+    // Update Max Stats
+    const duration = state.time;
+    saveData.stats.maxTime = Math.max(saveData.stats.maxTime, duration/60);
+    saveData.coins += state.coins; 
+    save();
+
+    const m = Math.floor(state.time / 3600), s = Math.floor((state.time % 3600) / 60); 
+    document.getElementById('final-score').innerText = `생존 시간: ${m}:${s}`; 
+    document.getElementById('final-coins').innerText = `획득: ${state.coins} 🪙`; 
+}
 function restartGame() { startGame(); }
 
 // Menus
@@ -1547,6 +1786,48 @@ function renderArtifacts() {
         }
         container.appendChild(card);
     });
+}
+
+function openAchieveScreen() { document.getElementById('start-screen').classList.add('hidden'); document.getElementById('achieve-screen').classList.remove('hidden'); renderAchievements(); }
+function closeAchieveScreen() { document.getElementById('achieve-screen').classList.add('hidden'); document.getElementById('start-screen').classList.remove('hidden'); }
+function renderAchievements() {
+    document.getElementById('achieve-currency').innerText = saveData.coins; 
+    const container = document.getElementById('achieve-container'); container.innerHTML = '';
+    
+    ACHIEVEMENTS.forEach(ach => {
+        const completed = ach.check(saveData.stats);
+        const claimed = saveData.achievements.includes(ach.id);
+        const item = document.createElement('div');
+        item.className = 'achieve-item' + (completed ? ' completed' : '');
+        
+        let btnHtml = '';
+        if (completed) {
+            if (claimed) btnHtml = `<button class="btn btn-claim" disabled>완료됨</button>`;
+            else btnHtml = `<button class="btn btn-claim" onclick="claimAchievement('${ach.id}')">보상 받기</button>`;
+        } else {
+            btnHtml = `<button class="btn btn-claim" disabled>진행 중</button>`;
+        }
+
+        item.innerHTML = `
+            <div class="achieve-info">
+                <div class="achieve-title">${ach.name}</div>
+                <div class="achieve-desc">${ach.desc}</div>
+                <div class="achieve-reward">🏆 ${ach.reward} 🪙</div>
+            </div>
+            ${btnHtml}
+        `;
+        container.appendChild(item);
+    });
+}
+function claimAchievement(id) {
+    const ach = ACHIEVEMENTS.find(a => a.id === id);
+    if (ach && !saveData.achievements.includes(id)) {
+        saveData.coins += ach.reward;
+        saveData.achievements.push(id);
+        save();
+        renderAchievements();
+        alert(`${ach.reward} 코인을 획득했습니다!`);
+    }
 }
 
 function openShop() { document.getElementById('start-screen').classList.add('hidden'); document.getElementById('shop-screen').classList.remove('hidden'); renderShop(); }
@@ -1648,7 +1929,6 @@ window.addEventListener('keydown', e => {
     if(e.code === 'Space') state.player?.dash(); 
     if(e.key.toLowerCase() === 'w') state.keys.w = true; if(e.key.toLowerCase() === 'a') state.keys.a = true; if(e.key.toLowerCase() === 's') state.keys.s = true; if(e.key.toLowerCase() === 'd') state.keys.d = true; 
     if(e.key === 'ArrowUp') state.keys.ArrowUp = true; if(e.key === 'ArrowLeft') state.keys.ArrowLeft = true; if(e.key === 'ArrowDown') state.keys.ArrowDown = true; if(e.key === 'ArrowRight') state.keys.ArrowRight = true;
-    // Prevent scroll
     if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)) e.preventDefault();
 });
 window.addEventListener('keyup', e => { 
@@ -1658,3 +1938,4 @@ window.addEventListener('keyup', e => {
 </script>
 </body>
 </html>
+    
