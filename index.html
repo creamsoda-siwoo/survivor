@@ -257,6 +257,7 @@
             font-size: 1.3rem; color: var(--gold); font-weight: 900;
             display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.6);
             padding: 5px 15px; border-radius: 20px; border: 1px solid rgba(255,215,0,0.3);
+            z-index: 100;
         }
 
         /* Skin Grid */
@@ -543,7 +544,7 @@
 
         <!-- Start Screen -->
         <div id="start-screen" class="ui-layer menu-screen interactive" style="display:flex;">
-            <div class="currency-display" style="top:20px; right:20px;">🪙 <span id="start-currency">0</span></div>
+            <div class="currency-display" style="top:20px; right:20px;">🪙 <span id="start-screen-gold">0</span></div>
             <h1 class="screen-title" style="font-size:3.5rem; margin-bottom:10px; color:var(--primary);">IFKO<br><span style="font-size:2.5rem; color:#fff;">SURVIVOR</span></h1>
             
             <button class="btn" style="width:220px; height:60px; font-size:1.3rem; margin-bottom:30px; box-shadow: 0 0 20px var(--primary);" onclick="openWeaponSelection()">MISSION START</button>
@@ -621,7 +622,6 @@ const SKINS = [
     { id: 'star', name: '스타', icon: '⭐' },
     { id: 'demon', name: '데몬', icon: '😈' },
     { id: 'alien', name: '외계인', icon: '👽' },
-    // New Skins
     { id: 'ghost', name: '유령', icon: '👻' },
     { id: 'slime', name: '슬라임', icon: '🟢' },
     { id: 'pumpkin', name: '펌킨', icon: '🎃' }
@@ -666,11 +666,12 @@ const UPGRADES = [
     { id: 'crossbow', name: '크로스보우', desc: '강력한 단발 사격', type: 'WEAPON', icon: '🏹' },
     { id: 'wand', name: '비전 지팡이', desc: '적을 추적하는 마법 미사일', type: 'WEAPON', icon: '🪄' },
     { id: 'saw', name: '회전 톱날', desc: '전방을 가르는 톱날 발사', type: 'WEAPON', icon: '⚙️' },
-    // V16 New Weapons
     { id: 'pulse', name: '펄스 링', desc: '주변 적을 밀쳐내는 충격파', type: 'WEAPON', icon: '⭕' },
     { id: 'hyperion', name: '하이페리온 빔', desc: '화면 끝까지 닿는 거대 광선', type: 'WEAPON', icon: '🌠' },
-    
-    // Hidden
+    { id: 'meteor', name: '메테오 지팡이', desc: '하늘에서 운석을 소환합니다', type: 'WEAPON', icon: '☄️' },
+    { id: 'starfall', name: '스타폴', desc: '별똥별을 떨어뜨려 기절시킵니다', type: 'WEAPON', icon: '💫' },
+    { id: 'necro', name: '네크로 지팡이', desc: '자폭하는 영혼을 소환합니다', type: 'WEAPON', icon: '💀' },
+    { id: 'poison', name: '맹독 안개', desc: '주변에 독구름을 생성합니다', type: 'WEAPON', icon: '🤢' },
     { id: 'singularity', name: '특이점', desc: '[히든] 적을 소멸시키는 블랙홀', type: 'HIDDEN', icon: '⚫', weight: 0.01 },
     { id: 'voidwalker', name: '보이드 워커', desc: '[히든] 공허의 틈을 엽니다', type: 'HIDDEN', icon: '🧿', weight: 0.01 },
     
@@ -696,7 +697,11 @@ const EVOLUTIONS = [
     { weapon: 'tesla', passive: 'multishot', evolveTo: 'thundergod', name: '뇌신', desc: '테슬라 진화: 화면 전체 타격', icon: '⚡' },
     { weapon: 'missile', passive: 'giant', evolveTo: 'nuke', name: '팻 맨', desc: '미사일 진화: 전술 핵무기', icon: '☢️' },
     { weapon: 'ion', passive: 'duration', evolveTo: 'orbital_strike', name: '오비탈 스트라이크', desc: '이온 캐논 진화: 행성 파괴 병기', icon: '🌌' },
-    { weapon: 'frost', passive: 'armor', evolveTo: 'blizzard', name: '블리자드', desc: '프로스트 노바 진화: 영구적인 눈보라', icon: '🥶' }
+    { weapon: 'frost', passive: 'armor', evolveTo: 'blizzard', name: '블리자드', desc: '프로스트 노바 진화: 영구적인 눈보라', icon: '🥶' },
+    { weapon: 'meteor', passive: 'giant', evolveTo: 'apocalypse', name: '아포칼립스', desc: '메테오 진화: 화면 전체 거대 운석우', icon: '🌋' },
+    { weapon: 'starfall', passive: 'dash_cd', evolveTo: 'supernova', name: '슈퍼노바', desc: '스타폴 진화: 폭발하며 블랙홀 생성', icon: '✨' },
+    { weapon: 'necro', passive: 'revive', evolveTo: 'lichking', name: '리치 킹', desc: '네크로 진화: 죽음의 군대 소환', icon: '🧟' },
+    { weapon: 'poison', passive: 'duration', evolveTo: 'venomstorm', name: '베놈 스톰', desc: '맹독 진화: 치명적인 산성 폭풍', icon: '☣️' }
 ];
 
 const ACHIEVEMENTS = [
@@ -731,22 +736,26 @@ const DEFAULT_DATA = {
 let saveData = loadData();
 
 function loadData() {
-    const d = localStorage.getItem('ifko_evo_v16');
+    const d = localStorage.getItem('ifko_evo_v18');
     if(!d) return JSON.parse(JSON.stringify(DEFAULT_DATA));
-    const parsed = JSON.parse(d);
-    const newData = JSON.parse(JSON.stringify(DEFAULT_DATA));
-    for (let key in parsed) {
-        if (typeof parsed[key] === 'object' && !Array.isArray(parsed[key])) {
-            newData[key] = { ...newData[key], ...parsed[key] };
-        } else {
-            newData[key] = parsed[key];
+    try {
+        const parsed = JSON.parse(d);
+        const newData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+        for (let key in parsed) {
+            if (typeof parsed[key] === 'object' && !Array.isArray(parsed[key])) {
+                newData[key] = { ...newData[key], ...parsed[key] };
+            } else {
+                newData[key] = parsed[key];
+            }
         }
+        return newData;
+    } catch(e) {
+        return JSON.parse(JSON.stringify(DEFAULT_DATA));
     }
-    return newData;
 }
 
 function save() {
-    localStorage.setItem('ifko_evo_v16', JSON.stringify(saveData));
+    localStorage.setItem('ifko_evo_v18', JSON.stringify(saveData));
 }
 
 function resetData() {
@@ -770,6 +779,7 @@ const state = {
     player: null, enemies: [], particles: [], items: [], projectiles: [], 
     boss: null, bossRespawnTimer: 0, bossLevel: 1,
     popups: [], shockwaves: [], gravityWells: [], mines: [], drones: [], voidZones: [], ionBeams: [], worms: [], spikeBalls: [], hyperBeams: [],
+    minions: [], poisonClouds: [],
     event: { type: null, timer: 0 },
     stars: [],
     weapons: {},
@@ -783,6 +793,13 @@ const state = {
     ult: { ready: true, charge: 100, cd: 0, maxCd: 1800, activeTime: 0 },
     facingRight: true
 };
+
+// --- Helper ---
+function getNearestEnemy(x, y, range=1000) {
+    let closest = null, min = range;
+    for(const e of state.enemies) { const d = Math.hypot(e.x-x, e.y-y); if(d<min){min=d;closest=e;}}
+    return closest;
+}
 
 // --- Classes ---
 
@@ -844,9 +861,9 @@ class Player {
         const equipHp = saveData.equipment.armor * 20;    
         const equipSpd = saveData.equipment.boots * 0.05; 
         const equipCd = saveData.equipment.boots * 0.02;
-        const equipCrit = saveData.equipment.helmet * 0.05; // New: Helmet
-        const equipCdr = saveData.equipment.gloves * 0.02;  // New: Gloves
-        const equipGreed = saveData.equipment.ring * 0.1;   // New: Ring
+        const equipCrit = saveData.equipment.helmet * 0.05; 
+        const equipCdr = saveData.equipment.gloves * 0.02; 
+        const equipGreed = saveData.equipment.ring * 0.1; 
 
         this.maxHp = (100 + job.stats.hp + shopHp + equipHp) * (1 + shopGrowth);
         this.hp = this.maxHp;
@@ -903,10 +920,6 @@ class Player {
             this.invuln = 5; // Keep invuln while dashing
             this.dashTime--;
             
-            // Boundary Check during dash to prevent wall clipping
-            // Simple infinite map logic doesn't have hard walls, but if we had limits:
-            // if(this.x < -2000) this.x = -2000; etc.
-            
             if(this.dashTime % 3 === 0) state.particles.push(new Particle(this.x, this.y, '#00ffcc', 10, 10));
         } else {
             let dx = 0, dy = 0;
@@ -951,18 +964,15 @@ class Player {
             const len = Math.sqrt(dx*dx + dy*dy); 
             if (len > 0) { dx /= len; dy /= len; }
         } else {
-            // Fix: Dash in facing direction if no input
             dx = state.facingRight ? 1 : -1;
             dy = 0;
         }
-        
-        // Normalize check to ensure we don't get stuck
         if (dx === 0 && dy === 0) { dx = state.facingRight ? 1 : -1; }
 
         this.dashVec = {x: dx, y: dy};
-        this.dashTime = 12; // Slightly longer dash
+        this.dashTime = 12; 
         this.dashCd = Math.floor(120 * (1 - this.cdReduc) * state.sessionStats.dashCdMult);
-        this.invuln = 15; // I-frames start
+        this.invuln = 15; 
         createExplosion(this.x, this.y, '#ffffff', 8);
         createPopup("DASH", this.x, this.y - 30, '#00ffcc');
     }
@@ -1065,7 +1075,6 @@ class Enemy {
         let scaler = 1 + (state.time / 180);
         if (state.isVoidMode) scaler *= 2; 
 
-        // Apply Golden Skull difficulty
         if (saveData.artifacts.skull) {
              scaler *= 1.3;
         }
@@ -1088,6 +1097,10 @@ class Enemy {
         else if (type === 'MINION') { this.hp = 5*scaler; this.speed = 2.5; this.size = 8; this.color = '#ffaaaa'; this.dmg = 5; }
         else if (type === 'BAT') { this.hp = 5*scaler; this.speed = 3.5; this.size = 10; this.color = '#440000'; this.dmg = 10; }
         else if (type === 'SNIPER') { this.hp = 20*scaler; this.speed = 0.9; this.size = 16; this.color = '#ff0000'; this.dmg = 40; }
+        else if (type === 'STALKER') { this.hp = 30*scaler; this.speed = 1.5; this.size = 18; this.color = '#333'; this.dmg = 25; this.visible = false; }
+        else if (type === 'TITAN') { this.hp = 300*scaler; this.speed = 0.4; this.size = 45; this.color = '#222'; this.dmg = 60; }
+        else if (type === 'MIMIC') { this.hp = 200*scaler; this.speed = 0; this.size = 20; this.color = '#ffd700'; this.dmg = 50; this.active = false; }
+        else if (type === 'ABYSS_KNIGHT') { this.hp = 500*scaler; this.speed = 0.8; this.size = 35; this.color = '#110022'; this.dmg = 80; }
         
         if (state.isVoidMode) { this.dmg *= 1.5; this.speed *= 1.2; }
         if (this.isElite) {
@@ -1121,10 +1134,15 @@ class Enemy {
             this.shootTimer++;
             if (this.shootTimer > 200) {
                 this.shootTimer = 0;
-                // Fast snipe shot
                 createPopup("SNIPE!", this.x, this.y - 20, "#ff0000");
                 state.projectiles.push(new Projectile(this.x, this.y, (dx/dist)*15, (dy/dist)*15, 30 * (state.isVoidMode?1.5:1), '#ff0000', 100, 3, 'enemy_bullet'));
             }
+        } else if (this.type === 'STALKER') {
+            this.x += (dx / dist) * this.speed; this.y += (dy / dist) * this.speed;
+            this.visible = dist < 150;
+        } else if (this.type === 'TITAN' || this.type === 'ABYSS_KNIGHT') {
+            this.x += (dx / dist) * this.speed; this.y += (dy / dist) * this.speed;
+            this.pushX *= 0.5; this.pushY *= 0.5; // Resistant to knockback
         } else if (this.type === 'VOLATILE') {
             this.x += (dx / dist) * this.speed; this.y += (dy / dist) * this.speed;
             if (dist < 80) {
@@ -1163,6 +1181,15 @@ class Enemy {
                     state.enemies.push(new Enemy('MINION', this.x + (Math.random()-0.5)*50, this.y + (Math.random()-0.5)*50));
                 }
             }
+        } else if (this.type === 'MIMIC') {
+            if (!this.active && dist < 100) {
+                this.active = true;
+                this.speed = 4.0;
+                createPopup("SURPRISE!", this.x, this.y - 30, '#fff');
+            }
+            if (this.active) {
+                this.x += (dx / dist) * this.speed; this.y += (dy / dist) * this.speed;
+            }
         } else if (this.type === 'WORM_HEAD') {
              const angle = Math.atan2(dy, dx);
              this.x += Math.cos(angle) * this.speed;
@@ -1173,10 +1200,14 @@ class Enemy {
         
         if (dist < this.size + player.size) { 
             player.takeDamage(this.dmg); 
-            if(this.type !== 'WORM_HEAD' && this.type !== 'TANK') { this.pushX = -(dx/dist)*10; this.pushY = -(dy/dist)*10; }
+            if(this.type !== 'WORM_HEAD' && this.type !== 'TANK' && this.type !== 'TITAN' && this.type !== 'ABYSS_KNIGHT') { this.pushX = -(dx/dist)*10; this.pushY = -(dy/dist)*10; }
         }
     }
     takeDamage(amt, knockback = 0, sourceX = 0, sourceY = 0) {
+        if(this.type === 'MIMIC' && !this.active) {
+            this.active = true; this.speed = 4.0; createPopup("!", this.x, this.y-20, '#fff');
+        }
+
         this.flashTime = 5;
         if(saveData.artifacts.axe) { const hpPct = state.player.hp / state.player.maxHp; if(hpPct < 0.5) amt *= 1.5; if(hpPct < 0.2) amt *= 2.0; }
         
@@ -1186,7 +1217,7 @@ class Enemy {
         amt *= state.player.dmgMult; 
         
         if (knockback > 0 && sourceX && sourceY && this.type !== 'WORM_HEAD' && this.type !== 'WORM_BODY') {
-            if (this.type === 'TANK') knockback *= 0.2;
+            if (this.type === 'TANK' || this.type === 'TITAN' || this.type === 'ABYSS_KNIGHT') knockback *= 0.1;
             const dx = this.x - sourceX, dy = this.y - sourceY;
             const dist = Math.sqrt(dx*dx + dy*dy);
             const kbForce = knockback * state.sessionStats.knockbackMult;
@@ -1211,21 +1242,23 @@ class Enemy {
         const luck = saveData.upgrades.luck || 0;
         const isGoldRush = state.event.type === 'GOLDRUSH';
 
-        if (this.isElite) {
+        if (this.isElite || this.type === 'MIMIC') {
             state.items.push(new Item(this.x, this.y, 0, 'CHEST'));
             createPopup("ELITE KILLED", this.x, this.y - 30, '#ffd700');
+        } else if (this.type === 'TITAN' || this.type === 'ABYSS_KNIGHT') {
+            state.items.push(new Item(this.x, this.y, 200, 'XP'));
         }
 
         if (rand < 0.005 * (1+luck*0.2)) state.items.push(new Item(this.x, this.y, 0, 'BOMB'));
         else if (rand < 0.01 * (1+luck*0.2)) state.items.push(new Item(this.x, this.y, 0, 'MAGNET'));
         else if (rand < 0.02 * (1+luck*0.2)) state.items.push(new Item(this.x, this.y, 0, 'HEAL'));
         else {
-             if (isGoldRush || rand < (state.isVoidMode ? 0.1 : 0.05) * (1+luck*0.1)) {
+             // Increased Gold Drop Chance (0.05 -> 0.1)
+             if (isGoldRush || rand < (state.isVoidMode ? 0.2 : 0.1) * (1+luck*0.1)) {
                  let it = new Item(this.x, this.y, 10, 'XP');
                  it.isCoin = true; it.color = '#ffd700'; 
                  state.items.push(it);
              } else {
-                 // Increased XP Drop (2 -> 5, 10 -> 30 for high yield)
                  state.items.push(new Item(this.x, this.y, 5 * (state.isVoidMode?2:1), 'XP')); 
              }
         }
@@ -1237,11 +1270,18 @@ class Enemy {
         state.kills++; saveData.stats.totalKills++;
     }
     draw(ctx) {
+        if (this.type === 'STALKER' && !this.visible && this.flashTime <= 0) {
+            ctx.globalAlpha = 0.1;
+        } else {
+            ctx.globalAlpha = 1.0;
+        }
+
         if(this.flashTime > 0) {
             ctx.fillStyle = '#ffffff';
         } else {
             ctx.fillStyle = this.color;
         }
+        
         ctx.shadowBlur = this.isElite ? 20 : 10; 
         ctx.shadowColor = this.isElite ? '#ffd700' : this.color; 
         ctx.beginPath();
@@ -1254,15 +1294,24 @@ class Enemy {
             ctx.beginPath(); ctx.moveTo(this.x+this.size, this.y); ctx.lineTo(this.x+this.size*2, this.y-10); ctx.lineTo(this.x, this.y-5); ctx.fill();
         }
         else if (this.type === 'WORM_HEAD' || this.type === 'WORM_BODY') { ctx.arc(this.x, this.y, this.size, 0, Math.PI*2); }
-        else if (this.type === 'TANK') { ctx.rect(this.x - this.size, this.y - this.size*0.8, this.size*2, this.size*1.6); }
+        else if (this.type === 'TANK' || this.type === 'TITAN' || this.type === 'ABYSS_KNIGHT') { ctx.rect(this.x - this.size, this.y - this.size*0.8, this.size*2, this.size*1.6); }
         else if (this.type === 'SUMMONER') { 
             ctx.arc(this.x, this.y, this.size, 0, Math.PI*2); ctx.fill(); 
             ctx.beginPath(); ctx.strokeStyle = '#fff'; ctx.arc(this.x, this.y, this.size + 5, 0, Math.PI*2); ctx.stroke();
+        }
+        else if (this.type === 'MIMIC') {
+            if (!this.active) {
+                ctx.rect(this.x-15, this.y-12, 30, 24); ctx.fill();
+                ctx.fillStyle = '#fff'; ctx.fillRect(this.x-15, this.y-2, 30, 2);
+            } else {
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
+            }
         }
         else ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
         ctx.fill(); 
         if(this.isElite) { ctx.strokeStyle='#ffd700'; ctx.lineWidth=2; ctx.stroke(); }
         ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1.0;
     }
 }
 
@@ -1316,7 +1365,8 @@ class Item {
                  createExplosion(this.x, this.y, '#ffd700', 30);
             }
             else if (this.isCoin) { 
-                const gain = Math.floor(10 * (1 + saveData.upgrades.greed * 0.1) * state.sessionStats.greedMult * (saveData.artifacts.skull ? 1.3 : 1));
+                // Boosted Base Gold to 20
+                const gain = Math.floor(20 * (1 + saveData.upgrades.greed * 0.1) * state.sessionStats.greedMult * (saveData.artifacts.skull ? 1.3 : 1));
                 state.coins += gain; saveData.stats.totalCoins += gain; 
                 createPopup(`+${gain}🪙`, this.x, this.y, '#ffd700');
             } else { 
@@ -1344,12 +1394,12 @@ class Projectile {
         this.x = x; this.y = y; this.vx = vx; this.vy = vy; this.dmg = dmg; this.color = color; 
         this.duration = duration * (1 + (saveData.upgrades.duration || 0) * 0.1) * state.sessionStats.durationMult; 
         this.size = size * state.sessionStats.sizeMult * state.sessionStats.areaMult; 
-        this.type = type; // bullet, missile, slash, laser, enemy_bullet, boomerang, arrow
+        this.type = type; 
         this.hitList = []; this.knockback = knockback;
         this.angle = Math.atan2(vy, vx);
-        this.returning = false; // For boomerang
+        this.returning = false;
         
-        if (type === 'magic_missile') {
+        if (type === 'magic_missile' || type === 'spirit') {
             this.homing = true;
         }
     }
@@ -1365,31 +1415,30 @@ class Projectile {
                 const speed = 15 * state.sessionStats.projectileSpeed;
                 this.x += (dx/dist) * speed; this.y += (dy/dist) * speed;
                 this.angle += 0.3;
-                if(dist < 20) return true; // Caught
+                if(dist < 20) return true; 
             }
             return false;
         }
 
-        if (this.type === 'magic_missile') {
-            let closest = null, min = 400;
-            for(const e of state.enemies) { const d = Math.hypot(e.x-this.x, e.y-this.y); if(d<min){min=d;closest=e;}}
+        if (this.type === 'magic_missile' || this.type === 'spirit') {
+            let closest = getNearestEnemy(this.x, this.y, 400);
             if (closest) {
                 const angle = Math.atan2(closest.y - this.y, closest.x - this.x);
-                // Steer towards target
-                const speed = 12 * state.sessionStats.projectileSpeed;
+                const speed = (this.type==='spirit' ? 8 : 12) * state.sessionStats.projectileSpeed;
                 this.vx += Math.cos(angle) * 1;
                 this.vy += Math.sin(angle) * 1;
                 const currentSpeed = Math.hypot(this.vx, this.vy);
                 this.vx = (this.vx/currentSpeed)*speed;
                 this.vy = (this.vy/currentSpeed)*speed;
             }
-            state.particles.push(new Particle(this.x, this.y, '#aa00ff', 0, 5, 2));
+            if(this.type === 'spirit') state.particles.push(new Particle(this.x, this.y, '#ffffff', 0, 5, 2));
+            else state.particles.push(new Particle(this.x, this.y, '#aa00ff', 0, 5, 2));
         }
 
         if (this.type === 'saw') {
-            if (this.duration > 100) { // Initial Move
+            if (this.duration > 100) { 
                 this.x += this.vx; this.y += this.vy;
-            } else { // Spin in place
+            } else { 
                 this.angle += 0.5;
             }
         } else {
@@ -1407,7 +1456,6 @@ class Projectile {
         ctx.shadowBlur = 15; ctx.shadowColor = this.color; 
 
         if (this.type === 'slash') {
-            // Drawn via custom draw method usually, but fallback here
             ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI*2); ctx.fill();
         } else if (this.type === 'laser') {
             ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.angle);
@@ -1430,7 +1478,7 @@ class Projectile {
                  ctx.beginPath(); ctx.moveTo(0, this.size); ctx.lineTo(5, this.size+5); ctx.lineTo(-5, this.size+5); ctx.fill();
              }
              ctx.restore();
-        } else if (this.type === 'magic_missile') {
+        } else if (this.type === 'magic_missile' || this.type === 'spirit') {
              ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI*2); ctx.fill();
         } else if (this.type === 'bullet' || this.type === 'enemy_bullet') {
              ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI*2); ctx.fill();
@@ -1438,6 +1486,16 @@ class Projectile {
              ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.angle);
              ctx.beginPath(); ctx.moveTo(10, 0); ctx.lineTo(-5, 5); ctx.lineTo(-5, -5); ctx.fill();
              ctx.restore();
+        } else if (this.type === 'star') {
+             ctx.beginPath();
+             const spikes = 5, outer = this.size, inner = this.size/2;
+             let rot = Math.PI/2 * 3, cx = this.x, cy = this.y, step = Math.PI/spikes;
+             ctx.moveTo(cx, cy-outer);
+             for(let i=0; i<spikes; i++) {
+                 ctx.lineTo(cx+Math.cos(rot)*outer, cy+Math.sin(rot)*outer); rot+=step;
+                 ctx.lineTo(cx+Math.cos(rot)*inner, cy+Math.sin(rot)*inner); rot+=step;
+             }
+             ctx.lineTo(cx, cy-outer); ctx.fill();
         } else {
              ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI*2); ctx.fill(); 
         }
@@ -1470,6 +1528,31 @@ class Mine {
     }
 }
 
+class GasCloud {
+    constructor(x, y, dmg, radius) {
+        this.x = x; this.y = y; this.dmg = dmg; 
+        this.radius = radius * state.sessionStats.areaMult; 
+        this.life = 300 * state.sessionStats.durationMult;
+    }
+    update() {
+        this.life--;
+        if(this.life % 30 === 0) {
+            for(const e of state.enemies) { if(Math.hypot(e.x - this.x, e.y - this.y) < this.radius) { e.takeDamage(this.dmg); } }
+        }
+        return this.life <= 0;
+    }
+    draw(ctx) {
+        ctx.fillStyle = `rgba(0, 255, 100, ${this.life/300 * 0.4})`;
+        ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2); ctx.fill();
+        // Smoke particles
+        if(state.time % 10 === 0) {
+             const angle = Math.random() * Math.PI * 2;
+             const r = Math.random() * this.radius;
+             state.particles.push(new Particle(this.x + Math.cos(angle)*r, this.y + Math.sin(angle)*r, '#00ff00', 1, 30, 4));
+        }
+    }
+}
+
 class IonBeam {
     constructor(x, y, dmg, radius) {
         this.x = x; this.y = y; this.dmg = dmg; this.radius = radius;
@@ -1491,19 +1574,49 @@ class IonBeam {
         if (!this.fired) {
             ctx.strokeStyle = `rgba(0, 255, 255, ${(60-this.timer)/60})`;
             ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2); ctx.stroke();
-            // Targeting circle shrinking
             ctx.beginPath(); ctx.arc(this.x, this.y, this.radius * (this.timer/60), 0, Math.PI*2); ctx.stroke();
             ctx.fillStyle = `rgba(0, 255, 255, 0.2)`; ctx.fill();
-            // Targeting line
             ctx.strokeStyle = 'rgba(0,255,255,0.5)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(this.x, this.y); ctx.lineTo(this.x, this.y - 1000); ctx.stroke();
         } else {
-            // Beam Effect
             const fade = (20 + this.timer) / 20;
             ctx.fillStyle = `rgba(200, 255, 255, ${fade})`;
             ctx.fillRect(this.x - this.radius, this.y - 1000, this.radius*2, 1000 + this.radius);
             ctx.fillStyle = `rgba(255, 255, 255, ${fade})`;
             ctx.fillRect(this.x - this.radius/2, this.y - 1000, this.radius, 1000 + this.radius);
         }
+    }
+}
+
+class Meteor {
+    constructor(x, y, dmg, radius, isGiant = false) {
+        this.targetX = x; this.targetY = y; this.dmg = dmg; 
+        this.radius = radius; this.isGiant = isGiant;
+        this.x = x + 100; this.y = y - 500;
+        this.progress = 0;
+    }
+    update() {
+        this.progress += 0.05;
+        this.x += (this.targetX - this.x) * 0.1;
+        this.y += (this.targetY - this.y) * 0.1;
+        if (this.progress >= 1 || Math.abs(this.y - this.targetY) < 10) {
+            createExplosion(this.targetX, this.targetY, '#ff4400', 30, 10);
+            state.shockwaves.push(new Shockwave(this.targetX, this.targetY, this.radius, '#ff4400'));
+            state.enemies.forEach(e => {
+                if(Math.hypot(e.x - this.targetX, e.y - this.targetY) < this.radius) {
+                    e.takeDamage(this.dmg, 20, this.targetX, this.targetY);
+                }
+            });
+            return true; 
+        }
+        return false;
+    }
+    draw(ctx) {
+        ctx.fillStyle = '#ff4400';
+        ctx.beginPath(); ctx.arc(this.x, this.y, this.isGiant ? 40 : 15, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(this.x, this.y); ctx.lineTo(this.x+20, this.y-100); ctx.lineTo(this.x-20, this.y-100); ctx.fill();
+        
+        ctx.fillStyle = 'rgba(255,0,0,0.2)';
+        ctx.beginPath(); ctx.arc(this.targetX, this.targetY, this.radius, 0, Math.PI*2); ctx.fill();
     }
 }
 
@@ -1515,11 +1628,8 @@ class HyperionBeam {
     update() {
         this.timer--;
         if(this.timer % 5 === 0) {
-            // Hit enemies in line
             const range = 2000;
             state.enemies.forEach(e => {
-                // Simplified collision: Project e.pos onto beam line
-                // But for screen clearing beam, simple distance check from player if angle matches
                 const dx = e.x - this.x;
                 const dy = e.y - this.y;
                 const dist = Math.hypot(dx, dy);
@@ -1557,7 +1667,6 @@ class SpikeBall {
         const speed = 10 * speedMult;
         this.x += this.vx; this.y += this.vy;
         
-        // Bounce within a virtual box around player
         const boxSize = 150 * areaMult;
         
         if (this.x > this.player.x + boxSize) { this.x = this.player.x + boxSize; this.vx = -Math.abs(this.vx); }
@@ -1565,7 +1674,6 @@ class SpikeBall {
         if (this.y > this.player.y + boxSize) { this.y = this.player.y + boxSize; this.vy = -Math.abs(this.vy); }
         if (this.y < this.player.y - boxSize) { this.y = this.player.y - boxSize; this.vy = Math.abs(this.vy); }
         
-        // Normalize speed
         const currentSpeed = Math.hypot(this.vx, this.vy);
         if (currentSpeed > 0) {
             this.vx = (this.vx / currentSpeed) * speed;
@@ -1575,7 +1683,6 @@ class SpikeBall {
     draw(ctx) {
         ctx.fillStyle = '#888';
         ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2); ctx.fill();
-        // Spikes
         for(let i=0; i<8; i++) {
             const a = state.time * 0.1 + (i * Math.PI / 4);
             const sx = this.x + Math.cos(a) * (this.radius + 5);
@@ -1615,7 +1722,6 @@ class Singularity {
     update() {
         this.life--;
         this.r += 0.5;
-        // Pull enemies
         for(const e of state.enemies) {
             const dx = this.x - e.x, dy = this.y - e.y, d = Math.hypot(dx, dy);
             if(d < 300 && d > 10) {
@@ -1640,7 +1746,6 @@ class Singularity {
         ctx.fillStyle = '#000';
         ctx.beginPath(); ctx.arc(this.x, this.y, this.r, 0, Math.PI*2); ctx.fill();
         ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
-        // Accretion disk
         ctx.beginPath(); ctx.arc(this.x, this.y, this.r * 1.5, 0, Math.PI*2); 
         ctx.strokeStyle = `rgba(255,255,255,${Math.random()})`; ctx.stroke();
     }
@@ -1688,20 +1793,10 @@ function updateWeapons() {
     const extraProj = state.sessionStats.projectileCount;
     const areaMult = state.sessionStats.areaMult;
 
-    // Helper: find nearest enemy for auto-aim
-    const findNearest = () => {
-        let closest = null, min = 600; 
-        for(const e of state.enemies) { 
-            const d = Math.hypot(e.x-p.x, e.y-p.y); 
-            if(d<min){ min=d; closest=e; }
-        }
-        return closest;
-    };
-
-    // Blaster (Buffed)
+    // Blaster
     if (w.blaster && w.blaster.level > 0) {
         if (w.blaster.cd <= 0) {
-            let closest = findNearest();
+            let closest = getNearestEnemy(p.x, p.y, w.blaster.evolved ? 700 : 450);
             if (closest) {
                 const angle = Math.atan2(closest.y - p.y, closest.x - p.x);
                 const shotCount = 1 + extraProj + (w.blaster.evolved ? 2 : 0);
@@ -1718,16 +1813,16 @@ function updateWeapons() {
         } else w.blaster.cd--;
     }
 
-    // Spectral Blade (Auto-Aim)
+    // Spectral Blade (Auto Aimed)
     if (w.blade && w.blade.level > 0) {
         if (w.blade.cd <= 0) {
-             const closest = findNearest();
-             const angle = closest ? Math.atan2(closest.y - p.y, closest.x - p.x) : (state.facingRight ? 0 : Math.PI);
              const range = 180 * sizeMult * areaMult;
+             let closest = getNearestEnemy(p.x, p.y, range * 1.5);
+             const angle = closest ? Math.atan2(closest.y - p.y, closest.x - p.x) : (state.facingRight ? 0 : Math.PI);
              const arc = Math.PI / 1.5;
+             
              createExplosion(p.x + Math.cos(angle)*50, p.y, '#ffffff', 5);
              
-             // Enhanced Visual Slash
              const slashProj = new Projectile(p.x, p.y, Math.cos(angle)*5, Math.sin(angle)*5, 0, w.blade.evolved ? '#ff0033' : '#ffffff', 8, 5, 'slash');
              slashProj.draw = (ctx) => {
                  ctx.save(); ctx.translate(p.x, p.y);
@@ -1760,7 +1855,7 @@ function updateWeapons() {
         } else w.blade.cd--;
     }
 
-    // Orbit (Buffed)
+    // Orbit
     if (w.orbit && w.orbit.level > 0) {
         w.orbit.angle += (w.orbit.evolved ? 0.1 : 0.05); 
         const count = w.orbit.level + (saveData.artifacts.cube ? 1 : 0) + extraProj + (w.orbit.evolved ? 2 : 0);
@@ -1810,7 +1905,7 @@ function updateWeapons() {
                 }
                 w.tesla.cd = 90 * cdReduc;
             } else {
-                let target = null; for(const e of state.enemies) if(Math.hypot(e.x - p.x, e.y - p.y) < 250) { target = e; break; } 
+                let target = getNearestEnemy(p.x, p.y, 250);
                 if(target) { 
                     fireTesla(target, 3+w.tesla.level+extraProj, 35+w.tesla.level*8); 
                     w.tesla.cd = (120-(w.tesla.level*5)) * cdReduc; 
@@ -1833,8 +1928,7 @@ function updateWeapons() {
                     this.x += this.vx; this.y += this.vy; this.duration--; 
                     this.angle = Math.atan2(this.vy, this.vx);
                     state.particles.push(new Particle(this.x, this.y, '#555', 0, 10, 3)); 
-                    let closest = null, min = 400;
-                    for(const e of state.enemies) { const d = Math.hypot(e.x-this.x, e.y-this.y); if(d<min){min=d; closest=e;}}
+                    let closest = getNearestEnemy(this.x, this.y, 400);
                     if(closest) {
                         const tAngle = Math.atan2(closest.y - this.y, closest.x - this.x);
                         this.vx += Math.cos(tAngle) * 0.5; this.vy += Math.sin(tAngle) * 0.5;
@@ -1870,8 +1964,7 @@ function updateWeapons() {
         }
         if (w.drone.cd <= 0) {
             state.drones.forEach(d => {
-                let closest = null, min = 350;
-                for(const e of state.enemies) { const dist = Math.hypot(e.x - d.x, e.y - d.y); if(dist < min) { min = dist; closest = e; } }
+                let closest = getNearestEnemy(d.x, d.y, 350);
                 if(closest) {
                     const ang = Math.atan2(closest.y - d.y, closest.x - d.x);
                     createExplosion(d.x, d.y, '#00ffff', 3);
@@ -1917,13 +2010,11 @@ function updateWeapons() {
         } else w.voidwalker.cd--;
     }
 
-    // --- NEW WEAPONS LOGIC ---
-
-    // Boomerang (Auto-Aim)
+    // Boomerang (Buffed)
     if (w.boomerang && w.boomerang.level > 0) {
         if (w.boomerang.cd <= 0) {
             const count = 1 + extraProj;
-            let closest = findNearest();
+            let closest = getNearestEnemy(p.x, p.y, 400);
             const angle = closest ? Math.atan2(closest.y - p.y, closest.x - p.x) : (state.facingRight ? 0 : Math.PI);
             for(let i=0; i<count; i++) {
                 const a = angle + (i - (count-1)/2)*0.3;
@@ -1933,10 +2024,10 @@ function updateWeapons() {
         } else w.boomerang.cd--;
     }
 
-    // Flamethrower (Auto-Aim)
+    // Flamethrower (Auto Aimed)
     if (w.flame && w.flame.level > 0) {
         if (w.flame.cd <= 0) {
-            let closest = findNearest();
+            let closest = getNearestEnemy(p.x, p.y, 400);
             const angle = closest ? Math.atan2(closest.y - p.y, closest.x - p.x) : (state.facingRight ? 0 : Math.PI);
             const count = 3 + w.flame.level;
             for(let i=0; i<count; i++) {
@@ -1946,19 +2037,18 @@ function updateWeapons() {
                 proj.pierce = true;
                 state.projectiles.push(proj);
             }
-            w.flame.cd = 5; // Fast fire
+            w.flame.cd = 5; 
         } else w.flame.cd--;
     }
 
-    // Gauss Rifle (Buffed)
+    // Gauss Rifle
     if (w.gauss && w.gauss.level > 0) {
         if (w.gauss.cd <= 0) {
-            let closest = findNearest();
+            let closest = getNearestEnemy(p.x, p.y, 600);
             const angle = closest ? Math.atan2(closest.y - p.y, closest.x - p.x) : (state.facingRight ? 0 : Math.PI);
             const range = 1000;
             const endX = p.x + Math.cos(angle)*range, endY = p.y + Math.sin(angle)*range;
             
-            // Visual Beam
             const beam = new Projectile(p.x, p.y, 0, 0, 0, '#00ff00', 10, 2, 'laser');
             beam.draw = (ctx) => {
                 ctx.strokeStyle = `rgba(0,255,100,${beam.duration/10})`; ctx.lineWidth = 3;
@@ -1966,9 +2056,7 @@ function updateWeapons() {
             };
             state.projectiles.push(beam);
 
-            // Instant Damage Raycast
             state.enemies.forEach(e => {
-                // Point line distance
                 const A = p.x - e.x, B = p.y - e.y, C = endX - p.x, D = endY - p.y;
                 const dot = A * C + B * D;
                 const len_sq = C * C + D * D;
@@ -1987,7 +2075,7 @@ function updateWeapons() {
         } else w.gauss.cd--;
     }
 
-    // Spike Ball (Buffed)
+    // Spike Ball
     if (w.spikedball && w.spikedball.level > 0) {
         if (state.spikeBalls.length < 1 + extraProj) {
             state.spikeBalls = [];
@@ -2004,10 +2092,10 @@ function updateWeapons() {
         });
     }
 
-    // Crossbow (Buffed)
+    // Crossbow
     if (w.crossbow && w.crossbow.level > 0) {
         if (w.crossbow.cd <= 0) {
-            let closest = findNearest();
+            let closest = getNearestEnemy(p.x, p.y, 500);
             const angle = closest ? Math.atan2(closest.y - p.y, closest.x - p.x) : (state.facingRight ? 0 : Math.PI);
             const count = 1 + extraProj;
             for(let i=0; i<count; i++) {
@@ -2018,7 +2106,7 @@ function updateWeapons() {
         } else w.crossbow.cd--;
     }
 
-    // Arcane Wand (Buffed)
+    // Arcane Wand
     if (w.wand && w.wand.level > 0) {
         if (w.wand.cd <= 0) {
             const count = 2 + w.wand.level + extraProj;
@@ -2031,11 +2119,11 @@ function updateWeapons() {
         } else w.wand.cd--;
     }
 
-    // Sawblade (Auto-Aim)
+    // Sawblade (Auto Aimed)
     if (w.saw && w.saw.level > 0) {
         if (w.saw.cd <= 0) {
             const count = 1 + extraProj;
-            let closest = findNearest();
+            let closest = getNearestEnemy(p.x, p.y, 500);
             const angle = closest ? Math.atan2(closest.y - p.y, closest.x - p.x) : (state.facingRight ? 0 : Math.PI);
             for(let i=0; i<count; i++) {
                 const a = angle + (i - (count-1)/2)*0.3;
@@ -2045,24 +2133,24 @@ function updateWeapons() {
         } else w.saw.cd--;
     }
     
-    // Pulse Ring (Buffed)
+    // Pulse Ring
     if (w.pulse && w.pulse.level > 0) {
         if (w.pulse.cd <= 0) {
             const range = (100 + w.pulse.level * 25) * areaMult;
             state.shockwaves.push(new Shockwave(p.x, p.y, range, '#ff00aa'));
             state.enemies.forEach(e => {
                 if(Math.hypot(e.x - p.x, e.y - p.y) < range) {
-                    e.takeDamage(40 + w.pulse.level * 15, 30, p.x, p.y); // High Knockback
+                    e.takeDamage(40 + w.pulse.level * 15, 30, p.x, p.y); 
                 }
             });
             w.pulse.cd = Math.max(40, (100 - w.pulse.level * 5) * cdReduc);
         } else w.pulse.cd--;
     }
 
-    // Hyperion Beam (Auto-Aim)
+    // Hyperion Beam (Auto Aimed)
     if (w.hyperion && w.hyperion.level > 0) {
         if (w.hyperion.cd <= 0) {
-            let closest = findNearest();
+            let closest = getNearestEnemy(p.x, p.y, 800);
             const angle = closest ? Math.atan2(closest.y - p.y, closest.x - p.x) : (state.facingRight ? 0 : Math.PI);
             const dmg = 100 + w.hyperion.level * 30;
             state.hyperBeams.push(new HyperionBeam(p.x, p.y, angle, dmg));
@@ -2070,15 +2158,91 @@ function updateWeapons() {
         } else w.hyperion.cd--;
     }
     
-    // Singularity (Hidden)
+    // Meteor Wand
+    if (w.meteor && w.meteor.level > 0) {
+        if (w.meteor.cd <= 0) {
+            const count = (w.meteor.evolved ? 5 : 1) + Math.floor(extraProj/2);
+            for(let i=0; i<count; i++) {
+                const offsetX = (Math.random()-0.5) * (w.meteor.evolved ? 800 : 400);
+                const offsetY = (Math.random()-0.5) * (w.meteor.evolved ? 800 : 400);
+                setTimeout(() => {
+                    if(state.running) state.projectiles.push(new Meteor(p.x + offsetX, p.y + offsetY, 100 + w.meteor.level*30, 80 * areaMult, w.meteor.evolved));
+                }, i * 100);
+            }
+            w.meteor.cd = Math.max(50, (150 - w.meteor.level*10) * cdReduc);
+        } else w.meteor.cd--;
+    }
+
+    // Starfall
+    if (w.starfall && w.starfall.level > 0) {
+        if (w.starfall.cd <= 0) {
+             const count = (w.starfall.evolved ? 3 : 1) + extraProj;
+             for(let i=0; i<count; i++) {
+                 const angle = Math.random() * Math.PI * 2;
+                 const dist = 100 + Math.random() * 300;
+                 const tx = p.x + Math.cos(angle)*dist;
+                 const ty = p.y + Math.sin(angle)*dist;
+                 
+                 const star = new Projectile(tx, ty - 500, 0, 15, 50 + w.starfall.level * 15, '#ffff00', 60, 10, 'star');
+                 star.targetY = ty;
+                 star.update = function() {
+                     this.y += this.vy;
+                     if(this.y >= this.targetY) {
+                         createExplosion(this.x, this.y, '#ffff00', 10);
+                         if (w.starfall.evolved) {
+                             state.gravityWells.push({x: this.x, y: this.y, life: 60, range: 100, dmg: 5}); // Mini black hole
+                         }
+                         state.enemies.forEach(e => {
+                             if(Math.hypot(e.x - this.x, e.y - this.y) < 60) {
+                                 e.takeDamage(this.dmg, 0, this.x, this.y);
+                                 e.frozen = 60;
+                             }
+                         });
+                         return true;
+                     }
+                     return false;
+                 };
+                 state.projectiles.push(star);
+             }
+             w.starfall.cd = Math.max(30, (100 - w.starfall.level * 5) * cdReduc);
+        } else w.starfall.cd--;
+    }
+    
+    // Necro Staff
+    if (w.necro && w.necro.level > 0) {
+        if (w.necro.cd <= 0) {
+            const count = (w.necro.evolved ? 2 : 1) + extraProj;
+            for(let i=0; i<count; i++) {
+                const spirit = new Projectile(p.x, p.y, (Math.random()-0.5)*5, (Math.random()-0.5)*5, 80 + w.necro.level * 20, '#ffffff', 300, 6, 'spirit');
+                spirit.onHit = () => { createExplosion(spirit.x, spirit.y, '#ffffff', 10); };
+                state.projectiles.push(spirit);
+            }
+            w.necro.cd = Math.max(60, (180 - w.necro.level * 10) * cdReduc);
+        } else w.necro.cd--;
+    }
+    
+    // Toxic Mist
+    if (w.poison && w.poison.level > 0) {
+        if (w.poison.cd <= 0) {
+            const count = w.poison.evolved ? 3 : 1;
+            for(let i=0; i<count; i++) {
+                const offsetX = (Math.random()-0.5) * 100;
+                const offsetY = (Math.random()-0.5) * 100;
+                state.poisonClouds.push(new GasCloud(p.x + offsetX, p.y + offsetY, 5 + w.poison.level * 2, 80));
+            }
+            w.poison.cd = Math.max(60, (200 - w.poison.level * 15) * cdReduc);
+        } else w.poison.cd--;
+    }
+    
+    // Singularity
     if (w.singularity && w.singularity.level > 0) {
         if (w.singularity.cd <= 0) {
             state.voidZones.push(new Singularity(p.x + (Math.random()-0.5)*300, p.y + (Math.random()-0.5)*300));
-            w.singularity.cd = 300 * cdReduc; // Long CD
+            w.singularity.cd = 300 * cdReduc; 
         } else w.singularity.cd--;
     }
 
-    // Ultimate Cooldown
+    // Ultimate
     if (!state.ult.ready) { 
         state.ult.cd++; 
         if (state.ult.cd >= state.ult.maxCd) { 
@@ -2195,14 +2359,12 @@ function useUltimate() {
 function updateEvents() {
     if (state.event.type) {
         state.event.timer--;
-        // Meteor Shower removed as per request
         if (state.event.timer <= 0) {
             state.event.type = null;
             document.getElementById('event-hud').style.display = 'none';
         }
     } else {
         if (state.time > 600 && Math.random() < 0.0005) {
-             // Only spawn positive events
              triggerEvent('GOLDRUSH');
         }
     }
@@ -2210,7 +2372,7 @@ function updateEvents() {
 
 function triggerEvent(type) {
     state.event.type = type;
-    state.event.timer = 600; // 10 seconds
+    state.event.timer = 600; 
     const hud = document.getElementById('event-hud');
     hud.style.display = 'block';
     hud.innerText = type === 'METEOR' ? '⚠️ METEOR SHOWER ⚠️' : '💰 GOLD RUSH 💰';
@@ -2222,11 +2384,10 @@ const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2
 function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
 window.addEventListener('resize', resize); resize();
 window.addEventListener('wheel', (e) => {
-    // Check if scrolling a menu
     let target = e.target;
     while(target && target !== document.body) {
         if (target.classList && (target.classList.contains('card-container') || target.classList.contains('list-layout') || target.classList.contains('skin-grid') || target.id === 'skill-container')) {
-            return; // Allow default scroll
+            return; 
         }
         target = target.parentNode;
     }
@@ -2256,7 +2417,6 @@ function openWeaponSelection() {
     document.querySelectorAll('.ui-layer').forEach(el => el.classList.add('hidden'));
     document.getElementById('weapon-screen').classList.remove('hidden');
     
-    // Pick 3 random weapons
     const container = document.getElementById('weapon-cards');
     container.innerHTML = '';
     
@@ -2282,13 +2442,6 @@ function selectStartWeapon(weaponId) {
     startGame();
 }
 
-function showStartScreen() { 
-    document.querySelectorAll('.ui-layer').forEach(el => el.classList.add('hidden')); 
-    document.getElementById('start-screen').classList.remove('hidden'); 
-    document.getElementById('joystick-zone').classList.add('hidden'); 
-    document.getElementById('start-currency').innerText = saveData.coins;
-}
-
 function startGame() {
     document.querySelectorAll('.ui-layer').forEach(el => el.classList.add('hidden'));
     document.getElementById('hud').classList.remove('hidden'); document.getElementById('joystick-zone').classList.remove('hidden');
@@ -2305,7 +2458,6 @@ function startGame() {
         }
     });
     
-    // Equip Start Weapon
     if(state.startWeapon && state.weapons[state.startWeapon]) {
         state.weapons[state.startWeapon].level = 1;
     } else {
@@ -2329,6 +2481,7 @@ function startGame() {
     state.player = new Player(); 
     state.enemies = []; state.items = []; state.particles = []; state.projectiles = []; 
     state.popups = []; state.shockwaves = []; state.gravityWells = []; state.mines = []; state.drones = []; state.voidZones = []; state.ionBeams = []; state.worms = []; state.spikeBalls = []; state.hyperBeams = [];
+    state.minions = []; state.poisonClouds = [];
     state.boss = null; state.bossLevel = 1;
     state.keys = { w: false, a: false, s: false, d: false, space: false, ArrowUp: false, ArrowLeft: false, ArrowDown: false, ArrowRight: false };
     
@@ -2341,10 +2494,9 @@ function startGame() {
 function loop() {
     if (!state.running) return;
     if (!state.paused) {
-        // Slowed down spawn rate (60 -> 80) and reduced cap (300 -> 200)
+        // Reduced spawn rate: every 80 frames (1.3s) instead of 60, cap at 200
         if (state.time % 80 === 0 && state.enemies.length < 200) spawnEnemy();
         
-        // Boss Logic
         if (state.time === BOSS_SPAWN_TIME * 60 && !state.boss) spawnBoss();
         if (state.bossRespawnTimer > 0) {
             state.bossRespawnTimer--;
@@ -2388,6 +2540,7 @@ function loop() {
         for (let i = state.voidZones.length - 1; i >= 0; i--) { if(state.voidZones[i].update()) state.voidZones.splice(i, 1); }
         for (let i = state.ionBeams.length - 1; i >= 0; i--) { if(state.ionBeams[i].update()) state.ionBeams.splice(i, 1); }
         for (let i = state.hyperBeams.length - 1; i >= 0; i--) { if(state.hyperBeams[i].update()) state.hyperBeams.splice(i, 1); }
+        for (let i = state.poisonClouds.length - 1; i >= 0; i--) { if(state.poisonClouds[i].update()) state.poisonClouds.splice(i, 1); }
         
         updateWeapons(); 
         
@@ -2405,3 +2558,463 @@ function loop() {
     }
     render(); requestAnimationFrame(loop);
 }
+
+function render() {
+    ctx.fillStyle = state.isVoidMode ? '#1a0524' : '#050508'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Abyss Visual Change
+    if(state.time > 1200) {
+        ctx.fillStyle = `rgba(30, 0, 0, 0.2)`; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    state.stars.forEach(s => s.draw(ctx));
+
+    if(!state.player) return;
+
+    ctx.save(); const cx = canvas.width / 2, cy = canvas.height / 2; 
+    
+    if (state.shockwaves.length > 0) {
+        const shake = Math.random() * 10 - 5;
+        ctx.translate(shake, shake);
+    }
+
+    ctx.translate(cx, cy); ctx.scale(ZOOM, ZOOM); ctx.translate(-state.player.x, -state.player.y);
+    
+    // Grid
+    ctx.strokeStyle = state.isVoidMode ? 'rgba(100, 0, 150, 0.2)' : 'rgba(50, 0, 100, 0.2)'; 
+    ctx.lineWidth = 2; const gridSize = 100; const offX = Math.floor(state.player.x / gridSize) * gridSize, offY = Math.floor(state.player.y / gridSize) * gridSize;
+    ctx.beginPath(); for (let x = offX - 1000/ZOOM; x < offX + 1000/ZOOM; x += gridSize) { ctx.moveTo(x, offY - 1000/ZOOM); ctx.lineTo(x, offY + 1000/ZOOM); } for (let y = offY - 1000/ZOOM; y < offY + 1000/ZOOM; y += gridSize) { ctx.moveTo(offX - 1000/ZOOM, y); ctx.lineTo(offX + 1000/ZOOM, y); } ctx.stroke();
+    
+    state.poisonClouds.forEach(c => c.draw(ctx));
+    state.mines.forEach(m => m.draw(ctx));
+    state.voidZones.forEach(z => z.draw(ctx));
+    state.ionBeams.forEach(b => b.draw(ctx));
+    state.hyperBeams.forEach(b => b.draw(ctx));
+    state.items.forEach(i => i.draw(ctx)); 
+    state.gravityWells.forEach(g => { ctx.beginPath(); ctx.arc(g.x, g.y, g.range, 0, Math.PI*2); ctx.strokeStyle='#6600cc'; ctx.stroke(); });
+    state.enemies.forEach(e => e.draw(ctx)); 
+    state.player.draw(ctx); 
+    state.drones.forEach(d => d.draw(ctx));
+    state.spikeBalls.forEach(b => b.draw(ctx));
+    state.projectiles.forEach(p => p.draw(ctx)); 
+    
+    // Plasma Shield Rendering (Overlay)
+    const w = state.weapons.plasma;
+    if (w && w.level > 0) {
+        const radius = 60 * state.sessionStats.sizeMult * state.sessionStats.areaMult;
+        ctx.save();
+        ctx.translate(state.player.x, state.player.y);
+        ctx.rotate(w.angle);
+        ctx.beginPath(); 
+        ctx.arc(0, 0, radius, 0, Math.PI*2);
+        ctx.strokeStyle = w.evolved ? 'rgba(255, 0, 255, 0.5)' : 'rgba(0, 255, 200, 0.5)';
+        ctx.lineWidth = 4;
+        ctx.stroke();
+        
+        const count = 1 + Math.floor(w.level / 3) + state.sessionStats.projectileCount;
+        for(let i=0; i<count; i++) {
+             const a = (Math.PI*2 * i / count);
+             const sx = Math.cos(a) * radius;
+             const sy = Math.sin(a) * radius;
+             ctx.fillStyle = w.evolved ? '#ff00ff' : '#00ffcc';
+             ctx.beginPath(); ctx.arc(sx, sy, 8, 0, Math.PI*2); ctx.fill();
+        }
+        ctx.restore();
+    }
+
+    state.particles.forEach(p => p.draw(ctx)); 
+    state.popups.forEach(p => p.draw(ctx)); 
+    state.shockwaves.forEach(s => s.draw(ctx));
+    
+    ctx.restore();
+}
+
+function spawnEnemy() {
+    const angle = Math.random() * Math.PI * 2, dist = 800 / ZOOM, x = state.player.x + Math.cos(angle) * dist, y = state.player.y + Math.sin(angle) * dist;
+    let type = 'SQUARE'; const t = state.time / 60;
+    const rand = Math.random();
+
+    if (t > 120 && Math.random() < 0.02) { spawnWorm(x, y); return; }
+
+    const isElite = Math.random() < 0.005; // 0.5% chance for elite
+
+    // Late Game Abyss Mobs
+    if (t > 20 && rand < 0.01) type = 'ABYSS_KNIGHT';
+
+    if (t > 180 && rand < 0.05) type = 'SNIPER';
+    else if (t > 180 && rand < 0.05) type = 'STALKER';
+    else if (t > 180 && rand < 0.02) type = 'TITAN';
+    else if (t > 180 && rand < 0.1) type = 'OCTAGON'; 
+    else if (t > 120 && rand < 0.15) type = 'TANK';
+    else if (t > 120 && rand < 0.2) type = 'RHOMBUS'; 
+    else if (t > 90 && rand < 0.1) type = 'SHOOTER';
+    else if (t > 60 && rand < 0.05) type = 'DASHER';
+    else if (t > 60 && rand < 0.05) type = 'BAT';
+    else if (t > 60 && rand < 0.05) type = 'SPLITTER';
+    else if (t > 60 && rand < 0.1) type = 'VOLATILE';
+    else if (t > 90 && rand < 0.05) type = 'SUMMONER';
+    else if (t > 60 && rand < 0.05) type = 'MIMIC';
+    else if (t > 60 && rand < 0.3) type = 'PENTAGON'; 
+    else if (t > 30 && rand < 0.4) type = 'TRIANGLE';
+
+    if (t > 90 && Math.random() < 0.05) for(let i=0; i<10; i++) state.enemies.push(new Enemy('SWARM', x + Math.random()*50, y + Math.random()*50, false)); 
+    else state.enemies.push(new Enemy(type, x, y, isElite));
+}
+function spawnBoss() { 
+    const angle = Math.random() * Math.PI * 2, dist = 600, x = state.player.x + Math.cos(angle) * dist, y = state.player.y + Math.sin(angle) * dist; 
+    state.boss = new Boss(x, y); state.enemies.push(state.boss); 
+    document.getElementById('boss-hud').classList.add('active'); 
+}
+function removeEnemy(e) { const idx = state.enemies.indexOf(e); if (idx > -1) state.enemies.splice(idx, 1); if (e instanceof Boss) { e.die(); } }
+function addXp(amt) { 
+    const xpBoost = 1 + ((saveData.upgrades.xp || 0) * 0.1);
+    state.xp += amt * xpBoost; 
+    if (state.xp >= state.nextLevelXp) { 
+        state.xp -= state.nextLevelXp; 
+        state.level++; 
+        // Increased scaling logic: 1.4 multiplier + 50 flat
+        state.nextLevelXp = Math.floor(state.nextLevelXp * 1.4 + 50); 
+        showUpgradeScreen(); 
+    } 
+    updateHUD(); 
+}
+function updateHUD() {
+    document.getElementById('xp-bar').style.width = `${(state.xp / state.nextLevelXp) * 100}%`; 
+    
+    const hpPct = Math.max(0, Math.min(100, (state.player.hp / state.player.maxHp) * 100));
+    document.getElementById('hp-bar').style.width = `${hpPct}%`;
+    document.getElementById('hp-text').innerText = `${Math.ceil(Math.max(0, state.player.hp))} / ${Math.ceil(state.player.maxHp)}`;
+
+    document.getElementById('level-display').innerText = state.level; document.getElementById('kill-display').innerText = state.kills; document.getElementById('coin-display').innerText = state.coins;
+    
+    // Update Gold on Start Screen as well
+    const startGold = document.getElementById('start-screen-gold');
+    if(startGold) startGold.innerText = saveData.coins;
+
+    const m = Math.floor(state.time / 3600), s = Math.floor((state.time % 3600) / 60); document.getElementById('timer').innerText = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+    if(state.boss) document.getElementById('boss-hp-fill').style.width = `${(state.boss.hp / state.boss.maxHp) * 100}%`;
+}
+
+// System Upgrade Logic (with Reroll/Skip/Banish)
+let isBanishMode = false;
+
+function showUpgradeScreen() {
+    state.paused = true; const container = document.getElementById('upgrade-cards'); container.innerHTML = '';
+    document.getElementById('upgrade-screen').classList.remove('hidden'); document.getElementById('joystick-zone').classList.add('hidden');
+    isBanishMode = false; updateMetaButtons();
+    
+    // Check evolutions
+    let hasEvolution = false;
+    for (const evo of EVOLUTIONS) {
+        if (state.weapons[evo.weapon] && !state.weapons[evo.weapon].evolved && state.weapons[evo.weapon].level >= 5) {
+            if (Math.random() < 0.4) {
+                const card = document.createElement('div'); card.className = 'card evolution'; 
+                card.innerHTML = `<div class="card-icon">${evo.icon}</div><div class="card-title">${evo.name}</div><div class="card-desc">${evo.desc}</div><div class="card-type">EVOLUTION</div>`; 
+                card.onclick = () => selectUpgrade(evo.evolveTo); container.appendChild(card); 
+                hasEvolution = true;
+                break; 
+            }
+        }
+    }
+    if (hasEvolution) return;
+
+    let choices = [];
+    const pool = UPGRADES.filter(u => !state.meta.banishedItems.includes(u.id));
+    const hiddenChance = (saveData.upgrades.luck || 0) * 0.05 + 0.01;
+    
+    for(let i=0; i<3; i++) {
+        let u;
+        if (state.level >= 15 && Math.random() < hiddenChance) { u = pool.find(x => x.type === 'HIDDEN'); }
+        if (!u) {
+            const commonPool = pool.filter(x => x.type !== 'HIDDEN');
+            if(commonPool.length > 0) u = commonPool[Math.floor(Math.random() * commonPool.length)];
+        }
+        
+        if (u) {
+            choices.push(u);
+            const card = document.createElement('div'); 
+            card.className = u.type === 'HIDDEN' ? 'card hidden-tier' : 'card';
+            
+            let lvlInfo = '';
+            if(u.type === 'WEAPON' || u.type === 'HIDDEN') lvlInfo = `(Lv.${state.weapons[u.id]?.level || 0})`;
+
+            card.innerHTML = `<div class="card-icon">${u.icon}</div><div class="card-title">${u.name}</div><div class="card-desc">${u.desc} ${lvlInfo}</div><div class="card-type">${u.type}</div>`;
+            card.onclick = () => {
+                if(isBanishMode) {
+                    if(state.meta.banish > 0) {
+                        state.meta.banish--;
+                        state.meta.banishedItems.push(u.id);
+                        toggleBanishMode(); 
+                        showUpgradeScreen(); 
+                    }
+                } else {
+                    selectUpgrade(u.id);
+                }
+            };
+            container.appendChild(card);
+        }
+    }
+}
+
+function updateMetaButtons() {
+    document.getElementById('cnt-reroll').innerText = state.meta.reroll;
+    document.getElementById('cnt-skip').innerText = state.meta.skip;
+    document.getElementById('cnt-banish').innerText = state.meta.banish;
+    
+    document.getElementById('btn-reroll').disabled = state.meta.reroll <= 0;
+    document.getElementById('btn-skip').disabled = state.meta.skip <= 0;
+    document.getElementById('btn-banish').disabled = state.meta.banish <= 0;
+    
+    const sub = document.getElementById('upgrade-subtitle');
+    if(isBanishMode) { sub.innerText = "제외할 항목을 선택하십시오 (이번 게임 등장 X)"; sub.style.color = '#ff3333'; }
+    else { sub.innerText = "강화 모듈을 선택하십시오"; sub.style.color = '#888'; }
+}
+
+function doReroll() {
+    if(state.meta.reroll > 0) { state.meta.reroll--; showUpgradeScreen(); }
+}
+function doSkip() {
+    if(state.meta.skip > 0) { 
+        state.meta.skip--; 
+        state.xp += state.nextLevelXp * 0.2; 
+        document.getElementById('upgrade-screen').classList.add('hidden'); document.getElementById('joystick-zone').classList.remove('hidden'); state.paused = false;
+    }
+}
+function toggleBanishMode() {
+    isBanishMode = !isBanishMode;
+    updateMetaButtons();
+}
+
+function selectUpgrade(id) {
+    if (id === 'heal') state.player.hp = Math.min(state.player.hp + state.player.maxHp * 0.5, state.player.maxHp);
+    else if (id === 'giant') state.sessionStats.sizeMult += 0.15;
+    else if (id === 'multishot') state.sessionStats.projectileCount += 1;
+    else if (id === 'sniper') state.sessionStats.projectileSpeed += 0.2;
+    else if (id === 'area') state.sessionStats.areaMult += 0.15;
+    else if (id === 'duration') state.sessionStats.durationMult += 0.15;
+    else if (id === 'knockback') state.sessionStats.knockbackMult += 0.2;
+    else if (id === 'armor') state.sessionStats.armor += 1;
+    else if (id === 'dash_cd') state.sessionStats.dashCdMult *= 0.9;
+    else if (id === 'pickup') state.sessionStats.pickupRangeMult += 0.3;
+    else if (id === 'greed') state.sessionStats.greedMult += 0.2;
+    else if (id === 'growth') { state.sessionStats.growth += 0.05; state.player.maxHp *= 1.05; state.player.hp += 10; }
+    
+    else if (id === 'exterminator') { state.weapons.blaster.evolved = true; createPopup("EVOLUTION!", state.player.x, state.player.y, '#ff0099'); }
+    else if (id === 'blackhole') { state.weapons.orbit.evolved = true; createPopup("EVOLUTION!", state.player.x, state.player.y, '#ff0099'); }
+    else if (id === 'thundergod') { state.weapons.tesla.evolved = true; createPopup("EVOLUTION!", state.player.x, state.player.y, '#ff0099'); }
+    else if (id === 'nuke') { state.weapons.missile.evolved = true; createPopup("EVOLUTION!", state.player.x, state.player.y, '#ff0099'); }
+    else if (id === 'soulreaper') { state.weapons.blade.evolved = true; createPopup("EVOLUTION!", state.player.x, state.player.y, '#ff0099'); }
+    else if (id === 'orbital_strike') { state.weapons.ion.evolved = true; createPopup("EVOLUTION!", state.player.x, state.player.y, '#ff0099'); }
+    else if (id === 'blizzard') { state.weapons.frost.evolved = true; createPopup("EVOLUTION!", state.player.x, state.player.y, '#00ccff'); }
+    else if (id === 'apocalypse') { state.weapons.meteor.evolved = true; createPopup("EVOLUTION!", state.player.x, state.player.y, '#ff4400'); }
+    else if (id === 'supernova') { state.weapons.starfall.evolved = true; createPopup("EVOLUTION!", state.player.x, state.player.y, '#ffff00'); }
+    else if (id === 'lichking') { state.weapons.necro.evolved = true; createPopup("EVOLUTION!", state.player.x, state.player.y, '#ffffff'); }
+    else if (id === 'venomstorm') { state.weapons.poison.evolved = true; createPopup("EVOLUTION!", state.player.x, state.player.y, '#00ff00'); }
+    
+    else if (state.weapons[id]) state.weapons[id].level++;
+    
+    document.getElementById('upgrade-screen').classList.add('hidden'); document.getElementById('joystick-zone').classList.remove('hidden'); state.paused = false;
+}
+
+function togglePause() { 
+    if (!state.running) return; state.paused = !state.paused; 
+    if (state.paused) { 
+        document.getElementById('pause-screen').classList.remove('hidden'); document.getElementById('joystick-zone').classList.add('hidden'); 
+        document.getElementById('pause-dmg').innerText = Math.round(state.player.dmgMult * 100) + '%';
+        document.getElementById('pause-area').innerText = Math.round(state.sessionStats.areaMult * 100) + '%';
+        document.getElementById('pause-spd').innerText = Math.round(state.player.speed * 100 / 3) + '%';
+        document.getElementById('pause-crit').innerText = Math.round(state.player.critChance * 100) + '%';
+        document.getElementById('pause-greed').innerText = '+' + Math.round((state.sessionStats.greedMult - 1 + saveData.upgrades.greed*0.2) * 100) + '%';
+    } else { 
+        document.getElementById('pause-screen').classList.add('hidden'); document.getElementById('joystick-zone').classList.remove('hidden'); 
+    } 
+}
+function quitGame() { saveData.coins += Math.floor(state.coins); save(); state.running = false; showStartScreen(); }
+function showStartScreen() { 
+    document.querySelectorAll('.ui-layer').forEach(el => el.classList.add('hidden')); 
+    document.getElementById('start-screen').classList.remove('hidden'); 
+    document.getElementById('joystick-zone').classList.add('hidden');
+    
+    // Update Gold Display on Start Screen
+    const startGold = document.getElementById('start-screen-gold');
+    if(startGold) startGold.innerText = saveData.coins;
+}
+function endGame() { 
+    state.running = false; document.getElementById('hud').classList.add('hidden'); document.getElementById('joystick-zone').classList.add('hidden'); document.getElementById('game-over-screen').classList.remove('hidden'); 
+    const duration = state.time; saveData.stats.maxTime = Math.max(saveData.stats.maxTime, duration/60);
+    saveData.coins += state.coins; save();
+    const m = Math.floor(state.time / 3600), s = Math.floor((state.time % 3600) / 60); 
+    document.getElementById('final-score').innerText = `생존 시간: ${m}:${s}`; 
+    document.getElementById('final-coins').innerText = `획득: ${state.coins} 🪙`; 
+}
+function restartGame() { openWeaponSelection(); }
+
+// Menus
+function openArmory() { document.getElementById('start-screen').classList.add('hidden'); document.getElementById('armory-screen').classList.remove('hidden'); renderArmory(); }
+function closeArmory() { document.getElementById('armory-screen').classList.add('hidden'); document.getElementById('start-screen').classList.remove('hidden'); }
+function renderArmory() {
+    document.getElementById('armory-currency').innerText = saveData.coins; const container = document.getElementById('armory-container'); container.innerHTML = '';
+    const gears = [
+        { id: 'weapon', name: '플라즈마 라이플', desc: '공격력 +20%', icon: '🔫' }, 
+        { id: 'armor', name: '나노 슈트', desc: '최대 체력 +20', icon: '🛡️' }, 
+        { id: 'boots', name: '제트 부츠', desc: '이동속도 +5% / 쿨타임 -2%', icon: '🥾' },
+        { id: 'helmet', name: '전술 헬멧', desc: '치명타 확률 +5%', icon: '⛑️' },
+        { id: 'gloves', name: '파워 장갑', desc: '쿨타임 감소 +2%', icon: '🥊' },
+        { id: 'ring', name: '고대 반지', desc: '골드 획득 +10%', icon: '💍' }
+    ];
+    gears.forEach(g => { const lvl = saveData.equipment[g.id] || 0; const cost = 25 * (lvl + 1); const div = document.createElement('div'); div.className = 'shop-item'; div.innerHTML = `<h3 style="font-size:1.5rem">${g.icon}</h3><h3>${g.name} (Lv.${lvl})</h3><p>${g.desc}</p><button class="btn" style="font-size:0.85rem;" onclick="upgradeEquipment('${g.id}', ${cost})">${cost} 🪙</button>`; container.appendChild(div); });
+}
+function upgradeEquipment(id, cost) { if(saveData.coins >= cost) { saveData.coins -= cost; if(!saveData.equipment[id]) saveData.equipment[id]=0; saveData.equipment[id]++; save(); renderArmory(); } else alert('코인이 부족합니다!'); }
+
+function openWardrobe() { document.getElementById('start-screen').classList.add('hidden'); document.getElementById('wardrobe-screen').classList.remove('hidden'); renderWardrobe(); }
+function closeWardrobe() { document.getElementById('wardrobe-screen').classList.add('hidden'); document.getElementById('start-screen').classList.remove('hidden'); }
+function renderWardrobe() {
+    const c = document.getElementById('skin-container'); c.innerHTML = '';
+    SKINS.forEach(s => {
+        const owned = saveData.ownedSkins.includes(s.id); const d = document.createElement('div'); d.className = 'skin-item' + (saveData.currentSkin === s.id ? ' selected' : '') + (!owned ? ' locked' : '');
+        d.innerHTML = `<div class="skin-preview">${s.icon}</div><div class="skin-name">${s.name}</div>${!owned?'<div class="lock-icon">🔒</div>':''}`;
+        if(owned) d.onclick = () => selectSkin(s.id); c.appendChild(d);
+    });
+}
+function selectSkin(id) { saveData.currentSkin = id; save(); renderWardrobe(); }
+
+function openArtifactScreen() { document.getElementById('start-screen').classList.add('hidden'); document.getElementById('artifact-screen').classList.remove('hidden'); renderArtifacts(); }
+function closeArtifactScreen() { document.getElementById('artifact-screen').classList.add('hidden'); document.getElementById('start-screen').classList.remove('hidden'); }
+function renderArtifacts() {
+    const container = document.getElementById('artifact-container'); container.innerHTML = '';
+    ARTIFACTS.forEach(art => {
+        const lvl = saveData.artifacts[art.id] || 0;
+        const owned = lvl > 0;
+        const card = document.createElement('div'); card.className = owned ? 'card' : 'card locked';
+        if (owned) {
+            card.innerHTML = `<div class="card-icon">${art.icon}</div><div class="card-title">${art.name}</div><div class="card-desc">${art.desc}</div><div class="card-type">LV.${lvl}</div>`;
+        } else {
+            card.innerHTML = `<div class="card-icon">❓</div><div class="card-title">???</div><div class="card-desc">잠김</div><div class="card-type">LOCKED</div>`;
+        }
+        container.appendChild(card);
+    });
+}
+
+function openAchieveScreen() { document.getElementById('start-screen').classList.add('hidden'); document.getElementById('achieve-screen').classList.remove('hidden'); renderAchievements(); }
+function closeAchieveScreen() { document.getElementById('achieve-screen').classList.add('hidden'); document.getElementById('start-screen').classList.remove('hidden'); }
+function renderAchievements() {
+    document.getElementById('achieve-currency').innerText = saveData.coins; 
+    const container = document.getElementById('achieve-container'); container.innerHTML = '';
+    ACHIEVEMENTS.forEach(ach => {
+        const completed = ach.check(saveData.stats);
+        const claimed = saveData.achievements.includes(ach.id);
+        const item = document.createElement('div');
+        item.className = 'achieve-item' + (completed ? ' completed' : '');
+        let btnHtml = '';
+        if (completed) {
+            if (claimed) btnHtml = `<button class="btn btn-claim" disabled>완료됨</button>`;
+            else btnHtml = `<button class="btn btn-claim" onclick="claimAchievement('${ach.id}')">보상 받기</button>`;
+        } else { btnHtml = `<button class="btn btn-claim" disabled>진행 중</button>`; }
+        item.innerHTML = `<div class="achieve-info"><div class="achieve-title">${ach.name}</div><div class="achieve-desc">${ach.desc}</div><div class="achieve-reward">🏆 ${ach.reward} 🪙</div></div>${btnHtml}`;
+        container.appendChild(item);
+    });
+}
+function claimAchievement(id) {
+    const ach = ACHIEVEMENTS.find(a => a.id === id);
+    if (ach && !saveData.achievements.includes(id)) {
+        saveData.coins += ach.reward; saveData.achievements.push(id); save(); renderAchievements(); alert(`${ach.reward} 코인을 획득했습니다!`);
+    }
+}
+
+function openShop() { document.getElementById('start-screen').classList.add('hidden'); document.getElementById('shop-screen').classList.remove('hidden'); renderShop(); }
+function closeShop() { document.getElementById('shop-screen').classList.add('hidden'); document.getElementById('start-screen').classList.remove('hidden'); }
+function renderShop() {
+    document.getElementById('shop-currency').innerText = saveData.coins; const container = document.getElementById('shop-container'); container.innerHTML = '';
+    const items = [
+        { id: 'damage', name: '기초 공격학', desc: '공격력 +10%' }, { id: 'health', name: '체력 단련', desc: '최대 체력 +10' }, { id: 'speed', name: '기동성 훈련', desc: '이동속도 +5%' }, { id: 'greed', name: '탐욕의 시선', desc: '골드 획득량 +10%' },
+        { id: 'cooldown', name: '빠른 장전', desc: '쿨타임 -5%' }, { id: 'crit', name: '치명타 연마', desc: '치명타 확률 +5%' }, { id: 'luck', name: '행운', desc: '좋은 아이템 확률 증가' }, { id: 'evasion', name: '회피술', desc: '회피율 +5%' },
+        { id: 'xp', name: '학습 능력', desc: '경험치 획득 +10%' }, { id: 'duration', name: '지속성', desc: '효과 지속시간 +10%' }, { id: 'regen', name: '자연 치유', desc: '3초마다 체력 1 회복' }, { id: 'revive', name: '불굴의 의지', desc: '사망 시 1회 부활' },
+        { id: 'armor', name: '티타늄 코팅', desc: '피해 감소 +1' }, { id: 'knockback', name: '충격 증폭기', desc: '넉백 +20%' },
+        { id: 'reroll', name: '리롤 모듈', desc: '시작 시 리롤 +1회' }, { id: 'skip', name: '스킵 모듈', desc: '시작 시 스킵 +1회' }, { id: 'banish', name: '배니시 모듈', desc: '시작 시 배니시 +1회' },
+        { id: 'growth', name: '성장판', desc: '레벨업 시 체력/최대체력 증가' }, { id: 'magnet', name: '자력 코일', desc: '획득 반경 영구 증가' }
+    ];
+    items.forEach(item => { 
+        const lvl = saveData.upgrades[item.id] || 0; 
+        const cost = SHOP_BASE_COST * (lvl + 1) * (['revive','reroll','skip','banish'].includes(item.id) ? 10 : 1); 
+        const div = document.createElement('div'); div.className = 'shop-item'; 
+        div.innerHTML = `<h3>${item.name} (Lv.${lvl})</h3><p>${item.desc}</p><button class="btn" style="font-size:0.85rem;" onclick="buyUpgrade('${item.id}', ${cost})">${cost} 🪙</button>`; 
+        container.appendChild(div); 
+    });
+}
+function buyUpgrade(id, cost) { if (saveData.coins >= cost) { saveData.coins -= cost; saveData.upgrades[id] = (saveData.upgrades[id] || 0) + 1; save(); renderShop(); } else alert('코인이 부족합니다!'); }
+
+function openGacha() { document.getElementById('start-screen').classList.add('hidden'); document.getElementById('gacha-screen').classList.remove('hidden'); document.getElementById('gacha-currency').innerText = saveData.coins; document.getElementById('gacha-result').style.display = 'none'; document.getElementById('gacha-buttons').style.display = 'flex'; }
+function closeGacha() { document.getElementById('gacha-screen').classList.add('hidden'); document.getElementById('start-screen').classList.remove('hidden'); }
+function rollGacha() { if(saveData.coins < GACHA_COST) { alert("코인이 부족합니다!"); return; } saveData.coins -= GACHA_COST; document.getElementById('gacha-currency').innerText = saveData.coins; const art = ARTIFACTS[Math.floor(Math.random() * ARTIFACTS.length)]; if (!saveData.artifacts[art.id]) saveData.artifacts[art.id] = 0; saveData.artifacts[art.id]++; save(); showGachaResult(art.icon, art.name, `${art.desc}\n(현재 Lv.${saveData.artifacts[art.id]})`); }
+function rollSkinGacha() { if(saveData.coins < SKIN_COST) { alert("코인이 부족합니다!"); return; } saveData.coins -= SKIN_COST; document.getElementById('gacha-currency').innerText = saveData.coins; const skin = SKINS[Math.floor(Math.random() * SKINS.length)]; if (saveData.ownedSkins.includes(skin.id)) { const refund = Math.floor(SKIN_COST * 0.5); saveData.coins += refund; showGachaResult(skin.icon, skin.name, `이미 보유중입니다!\n${refund}🪙 환급됨.`); } else { saveData.ownedSkins.push(skin.id); showGachaResult(skin.icon, skin.name, "새로운 스킨 획득!"); } save(); }
+function showGachaResult(icon, name, desc) { document.getElementById('gacha-buttons').style.display = 'none'; const res = document.getElementById('gacha-result'); res.style.display = 'flex'; document.getElementById('g-icon').innerText = icon; document.getElementById('g-name').innerText = name; document.getElementById('g-desc').innerText = desc; }
+function closeGachaResult() { document.getElementById('gacha-result').style.display = 'none'; document.getElementById('gacha-buttons').style.display = 'flex'; }
+function openSettings() { document.getElementById('start-screen').classList.add('hidden'); document.getElementById('settings-screen').classList.remove('hidden'); }
+function closeSettings() { document.getElementById('settings-screen').classList.add('hidden'); document.getElementById('start-screen').classList.remove('hidden'); }
+
+function openClassScreen() { document.getElementById('start-screen').classList.add('hidden'); document.getElementById('class-screen').classList.remove('hidden'); renderClasses(); }
+function closeClassScreen() { document.getElementById('class-screen').classList.add('hidden'); document.getElementById('start-screen').classList.remove('hidden'); }
+function renderClasses() {
+    document.getElementById('class-currency').innerText = saveData.coins; const container = document.getElementById('class-container'); container.innerHTML = '';
+    CLASSES.forEach(cls => {
+        const owned = saveData.ownedClasses.includes(cls.id); const selected = saveData.currentClass === cls.id;
+        const div = document.createElement('div'); div.className = 'shop-item' + (selected ? ' selected' : '');
+        let btnHtml = selected ? `<button class="btn btn-secondary" disabled>장착 중</button>` : owned ? `<button class="btn" onclick="selectClass('${cls.id}')">선택</button>` : `<button class="btn btn-accent" onclick="buyClass('${cls.id}', ${cls.cost})">${cls.cost} 🪙</button>`;
+        div.innerHTML = `<h3 style="font-size:1.5rem">${cls.icon}</h3><h3>${cls.name}</h3><p>${cls.desc}</p><div style="margin-bottom:10px; display:flex; gap:5px; flex-wrap:wrap; justify-content:center;">${cls.stats.hp!==0?`<span class="class-badge">HP ${cls.stats.hp>0?'+':''}${cls.stats.hp}</span>`:''}${cls.stats.dmg!==0?`<span class="class-badge">DMG ${cls.stats.dmg*100}%</span>`:''}${cls.stats.spd!==0?`<span class="class-badge">SPD ${cls.stats.spd}</span>`:''}${cls.stats.cd!==0?`<span class="class-badge">CDR ${cls.stats.cd*100}%</span>`:''}</div><div class="selected-check">✅</div>${btnHtml}`;
+        container.appendChild(div);
+    });
+}
+function selectClass(id) { saveData.currentClass = id; save(); renderClasses(); }
+function buyClass(id, cost) { if(saveData.coins >= cost) { saveData.coins -= cost; saveData.ownedClasses.push(id); saveData.currentClass = id; save(); renderClasses(); } else alert("코인이 부족합니다!"); }
+
+function openSkillScreen() { document.getElementById('start-screen').classList.add('hidden'); document.getElementById('skill-screen').classList.remove('hidden'); renderSkills(); }
+function closeSkillScreen() { document.getElementById('skill-screen').classList.add('hidden'); document.getElementById('start-screen').classList.remove('hidden'); }
+function renderSkills() {
+    const container = document.getElementById('skill-container'); container.innerHTML = '';
+    if(!saveData.ownedUlts) saveData.ownedUlts = ['nuclear'];
+    if(!saveData.currentUlt) saveData.currentUlt = 'nuclear';
+    
+    ULTIMATES.forEach(ult => {
+        const owned = saveData.ownedUlts.includes(ult.id);
+        const selected = saveData.currentUlt === ult.id;
+        const div = document.createElement('div'); 
+        div.className = 'ult-card' + (selected ? ' selected' : '');
+        div.onclick = () => { saveData.currentUlt = ult.id; save(); renderSkills(); };
+        div.innerHTML = `<div class="ult-icon-l">${ult.icon}</div><div style="flex:1"><div style="font-weight:bold; font-size:1.1rem; color:${ult.color}">${ult.name}</div><div style="font-size:0.8rem; color:#aaa;">${ult.desc}</div></div>${selected ? '<div style="color:#0f0; font-weight:bold;">EQUIPPED</div>' : ''}`;
+        container.appendChild(div);
+    });
+}
+
+// Input Handling
+const joyZone = document.getElementById('joystick-zone'), joyBase = document.getElementById('joystick-base'), joyKnob = document.getElementById('joystick-knob');
+joyZone.addEventListener('pointerdown', e => {
+    e.preventDefault(); state.pointer.down = true; state.pointer.id = e.pointerId; state.pointer.x = e.clientX; state.pointer.y = e.clientY;
+    state.joystick.active = true; state.joystick.originX = e.clientX; state.joystick.originY = e.clientY;
+    joyBase.style.display = 'block'; joyKnob.style.display = 'block';
+    joyBase.style.left = e.clientX + 'px'; joyBase.style.top = e.clientY + 'px'; joyKnob.style.left = e.clientX + 'px'; joyKnob.style.top = e.clientY + 'px';
+    const now = Date.now(); if (now - state.lastTap < 300) { if (state.player) state.player.dash(); } state.lastTap = now;
+});
+window.addEventListener('pointermove', e => {
+    if (!state.pointer.down || e.pointerId !== state.pointer.id) return; e.preventDefault();
+    const maxDist = 60, dx = e.clientX - state.joystick.originX, dy = e.clientY - state.joystick.originY, dist = Math.sqrt(dx*dx + dy*dy);
+    let kx = dx, ky = dy; if (dist > maxDist) { kx = (dx / dist) * maxDist; ky = (dy / dist) * maxDist; }
+    joyKnob.style.left = (state.joystick.originX + kx) + 'px'; joyKnob.style.top = (state.joystick.originY + ky) + 'px';
+    state.joystick.dx = kx / maxDist; state.joystick.dy = ky / maxDist;
+});
+window.addEventListener('pointerup', e => { if (e.pointerId !== state.pointer.id) return; e.preventDefault(); state.pointer.down = false; state.joystick.active = false; state.joystick.dx = 0; state.joystick.dy = 0; joyBase.style.display = 'none'; joyKnob.style.display = 'none'; });
+window.addEventListener('keydown', e => { 
+    if(e.code === 'Space') state.player?.dash(); 
+    if(e.key.toLowerCase() === 'w') state.keys.w = true; if(e.key.toLowerCase() === 'a') state.keys.a = true; if(e.key.toLowerCase() === 's') state.keys.s = true; if(e.key.toLowerCase() === 'd') state.keys.d = true; 
+    if(e.key === 'ArrowUp') state.keys.ArrowUp = true; if(e.key === 'ArrowLeft') state.keys.ArrowLeft = true; if(e.key === 'ArrowDown') state.keys.ArrowDown = true; if(e.key === 'ArrowRight') state.keys.ArrowRight = true;
+    if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)) e.preventDefault();
+});
+window.addEventListener('keyup', e => { 
+    if(e.key.toLowerCase() === 'w') state.keys.w = false; if(e.key.toLowerCase() === 'a') state.keys.a = false; if(e.key.toLowerCase() === 's') state.keys.s = false; if(e.key.toLowerCase() === 'd') state.keys.d = false; 
+    if(e.key === 'ArrowUp') state.keys.ArrowUp = false; if(e.key === 'ArrowLeft') state.keys.ArrowLeft = false; if(e.key === 'ArrowDown') state.keys.ArrowDown = false; if(e.key === 'ArrowRight') state.keys.ArrowRight = false;
+});
+
+// Call showStartScreen to update gold
+showStartScreen();
+</script>
+</body>
+</html>
