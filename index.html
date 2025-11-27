@@ -554,6 +554,9 @@
 
         <!-- Start Screen -->
         <div id="start-screen" class="ui-layer menu-screen interactive" style="display:flex;">
+            <!-- Added Currency Display here -->
+            <div class="currency-display">🪙 <span id="start-currency">0</span></div>
+            
             <h1 class="screen-title" style="font-size:3.5rem; margin-bottom:10px; color:var(--primary);">IFKO<br><span style="font-size:2.5rem; color:#fff;">SURVIVOR</span></h1>
             
             <button class="btn" style="width:220px; height:60px; font-size:1.3rem; margin-bottom:30px; box-shadow: 0 0 20px var(--primary);" onclick="openWeaponSelection()">MISSION START</button>
@@ -703,12 +706,12 @@ const EVOLUTIONS = [
 ];
 
 const ACHIEVEMENTS = [
-    { id: 'k100', name: '초보 사냥꾼', desc: '누적 100킬 달성', reward: 250, check: (s) => s.totalKills >= 100 },
-    { id: 'k1000', name: '베테랑', desc: '누적 1000킬 달성', reward: 750, check: (s) => s.totalKills >= 1000 },
-    { id: 'k5000', name: '학살자', desc: '누적 5000킬 달성', reward: 2500, check: (s) => s.totalKills >= 5000 },
-    { id: 'c1000', name: '수집가', desc: '누적 1000코인 획득', reward: 250, check: (s) => s.totalCoins >= 1000 },
-    { id: 'c10000', name: '부자', desc: '누적 10000코인 획득', reward: 1500, check: (s) => s.totalCoins >= 10000 },
-    { id: 't600', name: '생존자', desc: '최대 10분 생존', reward: 1000, check: (s) => s.maxTime >= 600 }
+    { id: 'k100', name: '초보 사냥꾼', desc: '누적 100킬 달성', reward: 500, check: (s) => s.totalKills >= 100 },
+    { id: 'k1000', name: '베테랑', desc: '누적 1000킬 달성', reward: 1500, check: (s) => s.totalKills >= 1000 },
+    { id: 'k5000', name: '학살자', desc: '누적 5000킬 달성', reward: 5000, check: (s) => s.totalKills >= 5000 },
+    { id: 'c1000', name: '수집가', desc: '누적 1000코인 획득', reward: 500, check: (s) => s.totalCoins >= 1000 },
+    { id: 'c10000', name: '부자', desc: '누적 10000코인 획득', reward: 3000, check: (s) => s.totalCoins >= 10000 },
+    { id: 't600', name: '생존자', desc: '최대 10분 생존', reward: 2000, check: (s) => s.maxTime >= 600 }
 ];
 
 const DEFAULT_DATA = {
@@ -734,7 +737,7 @@ const DEFAULT_DATA = {
 let saveData = loadData();
 
 function loadData() {
-    const d = localStorage.getItem('ifko_evo_v15');
+    const d = localStorage.getItem('ifko_evo_v16');
     if(!d) return JSON.parse(JSON.stringify(DEFAULT_DATA));
     const parsed = JSON.parse(d);
     const newData = JSON.parse(JSON.stringify(DEFAULT_DATA));
@@ -749,7 +752,7 @@ function loadData() {
 }
 
 function save() {
-    localStorage.setItem('ifko_evo_v15', JSON.stringify(saveData));
+    localStorage.setItem('ifko_evo_v16', JSON.stringify(saveData));
 }
 
 function resetData() {
@@ -840,6 +843,7 @@ class Player {
         const shopArmor = (saveData.upgrades.armor || 0);
         const shopKnockback = (saveData.upgrades.knockback || 0) * 0.2;
         const shopGrowth = (saveData.upgrades.growth || 0) * 0.05;
+        const shopDashCd = (saveData.upgrades.agility || 0) * 0.05;
         
         if (job.id === 'engineer') { state.sessionStats.durationMult += 0.2; state.sessionStats.sizeMult += 0.1; }
 
@@ -864,7 +868,7 @@ class Player {
         state.sessionStats.armor = shopArmor;
         state.sessionStats.knockbackMult = 1 + shopKnockback;
         state.sessionStats.sizeMult += artSize;
-        state.sessionStats.dashCdMult *= (1 - artDash);
+        state.sessionStats.dashCdMult = (1 - artDash) * (1 - shopDashCd);
         state.sessionStats.areaMult += equipRing;
         state.sessionStats.durationMult += equipRing;
 
@@ -898,7 +902,7 @@ class Player {
         if (this.dashTime > 0) {
             this.x += this.dashVec.x * 15; this.y += this.dashVec.y * 15;
             this.dashTime--;
-            if(this.dashTime % 3 === 0) state.particles.push(new Particle(this.x, this.y, '#00ffcc', 10, 10));
+            if(this.dashTime % 2 === 0) state.particles.push(new Particle(this.x, this.y, '#00ffcc', 0, 15, 10)); // Afterimage
         } else {
             let dx = 0, dy = 0;
             if (state.joystick.active) { dx += state.joystick.dx; dy += state.joystick.dy; }
@@ -942,8 +946,9 @@ class Player {
 
         this.dashVec = {x: dx, y: dy};
         this.dashTime = 10; 
-        this.dashCd = Math.floor(120 * (1 - this.cdReduc) * state.sessionStats.dashCdMult);
-        createExplosion(this.x, this.y, '#ffffff', 5);
+        this.dashCd = Math.floor(120 * (1 - this.cdReduc/2) * state.sessionStats.dashCdMult); // Cap dash cooldown reduction
+        createExplosion(this.x, this.y, '#00ffff', 10);
+        state.shockwaves.push(new Shockwave(this.x, this.y, 40, '#00ffff'));
     }
 
     takeDamage(amt) {
@@ -961,7 +966,8 @@ class Player {
 
         amt = Math.max(1, amt - state.sessionStats.armor);
         this.hp -= amt;
-        this.invuln = 30;
+        this.invuln = 30 + (saveData.upgrades.invuln || 0) * 12; // +0.2s per level
+        
         const thorns = saveData.artifacts.thorn || 0;
         if (thorns > 0) { state.enemies.forEach(e => { if(Math.hypot(e.x - this.x, e.y - this.y) < 100) e.takeDamage(amt * thorns * 0.5); }); }
         
@@ -981,9 +987,13 @@ class Player {
         ctx.save();
         ctx.translate(this.x, this.y);
         
+        // Dash Cooldown Indicator
         if(this.dashCd > 0) {
-            ctx.beginPath(); ctx.arc(0, 0, this.size + 8, 0, (Math.PI * 2) * (1 - this.dashCd/(120*(1-this.cdReduc)*state.sessionStats.dashCdMult)));
+            ctx.beginPath(); ctx.arc(0, 0, this.size + 8, 0, (Math.PI * 2) * (1 - this.dashCd/(120*(1-this.cdReduc/2)*state.sessionStats.dashCdMult)));
             ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 2; ctx.stroke();
+        } else {
+             ctx.beginPath(); ctx.arc(0, 0, this.size + 8, 0, Math.PI * 2);
+             ctx.strokeStyle = 'rgba(0, 255, 204, 0.3)'; ctx.lineWidth = 1; ctx.stroke();
         }
 
         let color = state.isVoidMode ? '#bc13fe' : '#00ffcc';
@@ -1146,8 +1156,8 @@ class Enemy {
         else if (rand < 0.02 * (1+luck*0.2)) state.items.push(new Item(this.x, this.y, 0, 'HEAL'));
         else {
              if (isGoldRush || rand < (state.isVoidMode ? 0.2 : 0.1) * (1+luck*0.1)) { // Increased coin chance
-                 let it = new Item(this.x, this.y, 10, 'XP');
-                 it.isCoin = true; it.color = '#ffd700'; 
+                 let it = new Item(this.x, this.y, 300, 'XP'); // Increased base coin value
+                 it.isCoin = true; it.color = '#ffd700'; it.val = 300;
                  state.items.push(it);
              } else {
                  state.items.push(new Item(this.x, this.y, 2 * (state.isVoidMode?2:1), 'XP')); 
@@ -1190,7 +1200,7 @@ class Boss extends Enemy {
         const coins = state.isVoidMode ? 100 : 50; // Increased drop count
         for(let i=0; i<coins; i++) { 
             let it = new Item(this.x + (Math.random()-0.5)*120, this.y + (Math.random()-0.5)*120, 50, 'XP'); 
-            it.isCoin = true; it.val = 150; // Half Value (300 -> 150)
+            it.isCoin = true; it.val = 2000; // Increased Boss Coin Value
             state.items.push(it); 
         } 
         state.boss = null; 
@@ -1226,16 +1236,20 @@ class Item {
             else if (this.type === 'BOMB') { state.enemies.forEach(e => { if(!(e instanceof Boss)) e.die(); else e.takeDamage(500); }); createExplosion(player.x, player.y, '#fff', 20); createPopup("BOOM!", this.x, this.y, '#fa0'); }
             else if (this.type === 'CHEST') {
                  addXp(200); 
-                 const gold = 1500; // Half value (3000 -> 1500)
-                 state.coins += gold; saveData.stats.totalCoins += gold; 
+                 const gold = 30000; // Increased Chest value
+                 state.coins += gold; 
+                 saveData.coins += gold; // Add to wallet immediately
+                 saveData.stats.totalCoins += gold; 
                  createPopup(`CHEST! +${gold}🪙`, this.x, this.y, '#ffd700');
                  createExplosion(this.x, this.y, '#ffd700', 10);
             }
             else if (this.isCoin) { 
-                // Reduced Coin value (base 100 -> 50)
-                const baseVal = this.val || 50;
+                // Increased Coin value (base 200)
+                const baseVal = this.val || 200;
                 const gain = Math.floor(baseVal * (1 + saveData.upgrades.greed * 0.1) * state.sessionStats.greedMult * (saveData.artifacts.skull ? 1.3 : 1));
-                state.coins += gain; saveData.stats.totalCoins += gain; 
+                state.coins += gain; 
+                saveData.coins += gain; // Add to wallet immediately
+                saveData.stats.totalCoins += gain; 
                 createPopup(`+${gain}🪙`, this.x, this.y, '#ffd700');
             } else { 
                 addXp(this.val); 
@@ -2278,6 +2292,9 @@ function showStartScreen() {
     document.getElementById('start-screen').classList.remove('hidden');
     document.getElementById('joystick-zone').style.display = 'none';
     document.body.className = ''; // Reset Void Mode visually in menu
+    
+    // Update currency display
+    document.getElementById('start-currency').innerText = saveData.coins;
 }
 
 // Menus
@@ -2576,6 +2593,7 @@ function updateVoidToggle() {
 
 // Init
 resize();
+showStartScreen(); // Initialize UI with currency
 
 </script>
 </body>
