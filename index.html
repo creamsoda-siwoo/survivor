@@ -589,6 +589,7 @@
             </div>
 
             <div style="display:flex; flex-direction:column; gap:15px; width: 200px;">
+                <button class="btn" onclick="manualSave()">💾 수동 저장</button>
                 <button class="btn btn-danger" onclick="resetData()">데이터 초기화</button>
                 <button class="btn btn-secondary" onclick="closeSettings()">뒤로가기</button>
             </div>
@@ -776,6 +777,16 @@ function loadData() {
 
 function save() {
     localStorage.setItem('ifko_evo_v17', JSON.stringify(saveData));
+}
+
+// Robust Save Handlers
+window.addEventListener('beforeunload', () => { if(state.running) save(); });
+window.addEventListener('pagehide', () => { if(state.running) save(); });
+document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'hidden' && state.running) save(); });
+
+function manualSave() {
+    save();
+    alert("데이터가 안전하게 저장되었습니다.");
 }
 
 function resetData() {
@@ -2265,6 +2276,7 @@ function addXp(amt) {
 
 function showUpgradeScreen() {
     state.paused = true;
+    save(); // Save progress
     document.getElementById('upgrade-screen').classList.remove('hidden');
     document.getElementById('cnt-reroll').innerText = state.meta.reroll;
     document.getElementById('cnt-skip').innerText = state.meta.skip;
@@ -2355,6 +2367,7 @@ function selectUpgrade(u) {
 
     document.getElementById('upgrade-screen').classList.add('hidden');
     state.paused = false;
+    save(); // Save after choice
 }
 
 // Meta Upgrades (Reroll/Skip)
@@ -2491,6 +2504,7 @@ function togglePause() {
     if (state.gameOver) return;
     state.paused = !state.paused;
     if (state.paused) {
+        save();
         document.getElementById('pause-screen').classList.remove('hidden');
         document.getElementById('pause-dmg').innerText = Math.round(state.player.dmgMult * 100) + '%';
         document.getElementById('pause-area').innerText = Math.round(state.sessionStats.areaMult * 100) + '%';
@@ -2525,6 +2539,7 @@ function endGame() {
 }
 
 function quitGame() {
+    save();
     state.running = false;
     document.getElementById('pause-screen').classList.add('hidden');
     showStartScreen();
