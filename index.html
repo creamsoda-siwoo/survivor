@@ -38,7 +38,7 @@
 
         #game-container {
             position: relative; width: 100%; height: 100%;
-            background: var(--bg); overflow: hidden; transition: background 0.5s;
+            background: var(--bg); overflow: hidden; transition: background 0.5s, filter 0.2s;
         }
 
         canvas { display: block; width: 100%; height: 100%; cursor: crosshair; touch-action: none; }
@@ -53,6 +53,10 @@
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: radial-gradient(circle, rgba(0,0,0,0) 40%, rgba(0,0,0,0.8) 100%);
             pointer-events: none; z-index: 16;
+        }
+        #flash-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #fff; opacity: 0; pointer-events: none; z-index: 50; transition: opacity 0.1s;
         }
 
         /* UI Layers */
@@ -379,6 +383,7 @@
     <div id="game-container">
         <div class="scanlines"></div>
         <div class="vignette"></div>
+        <div id="flash-overlay"></div>
         <canvas id="gameCanvas"></canvas>
 
         <!-- Joystick UI -->
@@ -433,7 +438,7 @@
             <h2 class="screen-title" style="font-size:2rem;">SYSTEM UPGRADE</h2>
             <div class="meta-btn-row">
                 <button class="meta-btn" id="btn-reroll" onclick="doReroll()">🔄 Reroll <span id="cnt-reroll">0</span></button>
-                <button class="meta-btn" id="btn-skip" onclick="doSkip()">⏭️ Skip <span id="cnt-skip">0</span></button>
+                <button class="meta-btn" id="btn-skip" onclick="doSkip()">💰 Skip (+200, +25% XP) <span id="cnt-skip">0</span></button>
                 <button class="meta-btn" id="btn-banish" onclick="toggleBanishMode()">🚫 Banish <span id="cnt-banish">0</span></button>
             </div>
             <p class="screen-subtitle" id="upgrade-subtitle">강화 모듈을 선택하십시오</p>
@@ -622,9 +627,9 @@ const CLASSES = [
 ];
 
 const ULTIMATES = [
-    { id: 'nuclear', name: '뉴클리어', desc: '화면 전체의 적에게 괴멸적인 피해를 입힙니다.', icon: '☢️', color: '#ff3300' },
-    { id: 'chrono', name: '크로노 브레이크', desc: '5초 동안 시간을 멈추고 자신은 가속합니다.', icon: '⏳', color: '#00ccff' },
-    { id: 'berserk', name: '버서커', desc: '10초 동안 공격속도와 이동속도가 200% 증가합니다.', icon: '🩸', color: '#ff0055' }
+    { id: 'nuclear', name: '뉴클리어', desc: '화면 전체 적과 탄막을 소멸시킵니다.', icon: '☢️', color: '#ff3300' },
+    { id: 'chrono', name: '크로노 브레이크', desc: '모든 적과 투사체를 5초간 정지시킵니다.', icon: '⏳', color: '#00ccff' },
+    { id: 'berserk', name: '버서커', desc: '거대화하며 공격 능력과 범위가 대폭 증가합니다.', icon: '🩸', color: '#ff0055' }
 ];
 
 const SKINS = [
@@ -633,7 +638,9 @@ const SKINS = [
     { id: 'bot', name: '로봇', icon: '🤖' },
     { id: 'star', name: '스타', icon: '⭐' },
     { id: 'demon', name: '데몬', icon: '😈' },
-    { id: 'alien', name: '외계인', icon: '👽' }
+    { id: 'alien', name: '외계인', icon: '👽' },
+    { id: 'ninja', name: '닌자', icon: '🥷' },
+    { id: 'paladin', name: '팔라딘', icon: '👼' }
 ];
 
 const ARTIFACTS = [
@@ -645,7 +652,6 @@ const ARTIFACTS = [
     { id: 'axe', name: '광전사의 도끼', desc: '체력이 낮을수록 강해짐', icon: '🪓' },
     { id: 'watch', name: '정지된 시계', desc: '적 이동속도 -10%', icon: '⏱️' },
     { id: 'thorn', name: '가시 갑옷', desc: '피격 시 반사 피해', icon: '🌵' },
-    // New Artifacts
     { id: 'drink', name: '에너지 드링크', desc: '공격 속도 +10%', icon: '🥤' },
     { id: 'scope', name: '스나이퍼 스코프', desc: '치명타 확률 +10%', icon: '🔭' },
     { id: 'shield', name: '보호막 생성기', desc: '주기적으로 보호막 생성', icon: '🛡️' },
@@ -653,7 +659,11 @@ const ARTIFACTS = [
     { id: 'jet', name: '제트 엔진', desc: '대시 거리 및 속도 +20%', icon: '🚀' },
     { id: 'medkit', name: '구급 상자', desc: '회복 아이템 효율 +50%', icon: '💊' },
     { id: 'uranium', name: '열화 우라늄', desc: '투사체 크기 +20%', icon: '☢️' },
-    { id: 'nano', name: '나노 머신', desc: '초당 체력 0.5% 회복', icon: '🦠' }
+    { id: 'nano', name: '나노 머신', desc: '초당 체력 0.5% 회복', icon: '🦠' },
+    // New Artifacts
+    { id: 'holo', name: '홀로그램 투영기', desc: '회피율 +10%', icon: '💿' },
+    { id: 'fusion', name: '융합 배터리', desc: '공격력 +5%, 범위 +5%', icon: '🔋' },
+    { id: 'charm', name: '행운의 부적', desc: '행운 +2, 치명타 +5%', icon: '🍀' }
 ];
 
 const UPGRADES = [
@@ -669,13 +679,20 @@ const UPGRADES = [
     { id: 'plasma', name: '플라즈마 쉴드', desc: '회전하는 방어막', type: 'WEAPON', icon: '🛡️' },
     { id: 'ion', name: '이온 캐논', desc: '궤도 폭격 레이저', type: 'WEAPON', icon: '🛰️' },
     { id: 'frost', name: '프로스트 노바', desc: '주변 적 빙결', type: 'WEAPON', icon: '❄️' },
-    // New Weapons
     { id: 'boomerang', name: '부메랑', desc: '적을 치고 되돌아옵니다', type: 'WEAPON', icon: '🪃' },
     { id: 'flame', name: '화염 방사기', desc: '전방에 불을 뿜습니다', type: 'WEAPON', icon: '🔥' },
     { id: 'gauss', name: '가우스 라이플', desc: '초고속 관통 저격', type: 'WEAPON', icon: '🔋' },
     { id: 'spikedball', name: '스파이크 볼', desc: '주변을 튕겨다니는 철퇴', type: 'WEAPON', icon: '🧶' },
     { id: 'crossbow', name: '크로스보우', desc: '강력한 단발 사격', type: 'WEAPON', icon: '🏹' },
-    
+    { id: 'wand', name: '매직 원드', desc: '가까운 적에게 마법 화살', type: 'WEAPON', icon: '🪄' },
+    { id: 'acid', name: '산성 플라스크', desc: '지속 피해를 주는 장판', type: 'WEAPON', icon: '🧪' },
+    { id: 'meteor', name: '메테오 셉터', desc: '무작위 위치에 운석 낙하', type: 'WEAPON', icon: '☄️' },
+    { id: 'poison', name: '베놈 트레일', desc: '이동 경로에 독가스 살포', type: 'WEAPON', icon: '☠️' },
+
+    // New Weapons
+    { id: 'scythe', name: '사슬 낫', desc: '주변을 회전하며 적을 벱니다', type: 'WEAPON', icon: '⛓️' },
+    { id: 'grenade', name: '플라즈마 수류탄', desc: '곡사로 날아가 폭발합니다', type: 'WEAPON', icon: '💣' },
+
     // Hidden
     { id: 'singularity', name: '특이점', desc: '[히든] 적을 소멸시키는 블랙홀', type: 'HIDDEN', icon: '⚫', weight: 0.01 },
     { id: 'voidwalker', name: '보이드 워커', desc: '[히든] 공허의 틈을 엽니다', type: 'HIDDEN', icon: '🧿', weight: 0.01 },
@@ -692,7 +709,12 @@ const UPGRADES = [
     { id: 'pickup', name: '자기장', desc: '아이템 획득 반경 +30%', type: 'STAT', icon: '🧲' },
     { id: 'dash_cd', name: '부스터', desc: '대시 쿨타임 -10%', type: 'STAT', icon: '👟' },
     { id: 'greed', name: '채굴자', desc: '골드 획득 +20%', type: 'STAT', icon: '💰' },
-    { id: 'growth', name: '성장', desc: '최대체력 +5%', type: 'STAT', icon: '🌲' }
+    { id: 'growth', name: '성장', desc: '최대체력 +5%', type: 'STAT', icon: '🌲' },
+    { id: 'haste', name: '헤이스트', desc: '공속 및 이속 +10%', type: 'STAT', icon: '⚡' },
+    
+    // New Upgrades
+    { id: 'overclock', name: '오버클럭', desc: '공격 속도 +10%', type: 'STAT', icon: '⚙️' },
+    { id: 'titanium', name: '티타늄 합금', desc: '받는 피해 -5%', type: 'STAT', icon: '🔩' }
 ];
 
 const EVOLUTIONS = [
@@ -726,7 +748,8 @@ const DEFAULT_DATA = {
         damage: 0, health: 0, speed: 0, greed: 0, 
         cooldown: 0, magnet: 0, crit: 0, regen: 0, 
         revive: 0, luck: 0, evasion: 0, xp: 0, duration: 0,
-        armor: 0, knockback: 0, reroll: 0, skip: 0, banish: 0, growth: 0
+        armor: 0, knockback: 0, reroll: 0, skip: 0, banish: 0, growth: 0,
+        overclock: 0, titanium: 0
     },
     equipment: { weapon: 0, helmet: 0, suit: 0, gloves: 0, boots: 0, ring: 0 },
     artifacts: {},
@@ -737,7 +760,7 @@ const DEFAULT_DATA = {
 let saveData = loadData();
 
 function loadData() {
-    const d = localStorage.getItem('ifko_evo_v16');
+    const d = localStorage.getItem('ifko_evo_v17');
     if(!d) return JSON.parse(JSON.stringify(DEFAULT_DATA));
     const parsed = JSON.parse(d);
     const newData = JSON.parse(JSON.stringify(DEFAULT_DATA));
@@ -752,7 +775,7 @@ function loadData() {
 }
 
 function save() {
-    localStorage.setItem('ifko_evo_v16', JSON.stringify(saveData));
+    localStorage.setItem('ifko_evo_v17', JSON.stringify(saveData));
 }
 
 function resetData() {
@@ -775,14 +798,14 @@ const state = {
     lastTap: 0,
     player: null, enemies: [], particles: [], items: [], projectiles: [], 
     boss: null, bossRespawnTimer: 0, bossLevel: 1,
-    popups: [], shockwaves: [], gravityWells: [], mines: [], drones: [], voidZones: [], ionBeams: [], worms: [], spikeBalls: [],
+    popups: [], shockwaves: [], gravityWells: [], mines: [], drones: [], voidZones: [], ionBeams: [], worms: [], spikeBalls: [], acidPools: [], gasClouds: [],
     event: { type: null, timer: 0 },
     stars: [],
     weapons: {},
     sessionStats: { 
         sizeMult: 1, projectileCount: 0, projectileSpeed: 1, 
         areaMult: 1, durationMult: 1, knockbackMult: 1, 
-        dashCdMult: 1, pickupRangeMult: 1, armor: 0, greedMult: 1, growth: 0
+        dashCdMult: 1, pickupRangeMult: 1, armor: 0, greedMult: 1, growth: 0, dmgReducPct: 0
     },
     meta: { reroll: 0, skip: 0, banish: 0, banishedItems: [] },
     isVoidMode: false,
@@ -824,18 +847,20 @@ class Player {
         const job = CLASSES.find(c => c.id === saveData.currentClass) || CLASSES[0];
         
         // Artifact bonuses
-        const artDmg = (saveData.artifacts.cube || 0) * 0.1;
+        const artDmg = (saveData.artifacts.cube || 0) * 0.1 + (saveData.artifacts.fusion || 0) * 0.05;
         const artSpd = (saveData.artifacts.feather || 0) * 0.05;
         const artCd = (saveData.artifacts.chip || 0) * 0.05 + (saveData.artifacts.drink || 0) * 0.1;
-        const artCrit = (saveData.artifacts.scope || 0) * 0.1;
+        const artCrit = (saveData.artifacts.scope || 0) * 0.1 + (saveData.artifacts.charm || 0) * 0.05;
         const artDash = (saveData.artifacts.jet || 0) * 0.2;
         const artRegen = (saveData.artifacts.nano || 0) * 0.5; // 0.5 hp/sec
-        const artSize = (saveData.artifacts.uranium || 0) * 0.2;
+        const artSize = (saveData.artifacts.uranium || 0) * 0.2 + (saveData.artifacts.fusion || 0) * 0.05;
+        const artEvasion = (saveData.artifacts.holo || 0) * 0.1;
+        const artLuck = (saveData.artifacts.charm || 0) * 2;
 
         const shopDmg = saveData.upgrades.damage * 0.1;
         const shopHp = saveData.upgrades.health * 10;
         const shopSpd = saveData.upgrades.speed * 0.05;
-        const shopCd = (saveData.upgrades.cooldown || 0) * 0.05;
+        const shopCd = (saveData.upgrades.cooldown || 0) * 0.05 + (saveData.upgrades.overclock || 0) * 0.1;
         const shopCrit = (saveData.upgrades.crit || 0) * 0.05 + (saveData.upgrades.luck || 0) * 0.02;
         const shopRegen = (saveData.upgrades.regen || 0) * 1;
         const shopRevive = (saveData.upgrades.revive || 0);
@@ -844,6 +869,7 @@ class Player {
         const shopKnockback = (saveData.upgrades.knockback || 0) * 0.2;
         const shopGrowth = (saveData.upgrades.growth || 0) * 0.05;
         const shopDashCd = (saveData.upgrades.agility || 0) * 0.05;
+        const shopDmgReduc = (saveData.upgrades.titanium || 0) * 0.05;
         
         if (job.id === 'engineer') { state.sessionStats.durationMult += 0.2; state.sessionStats.sizeMult += 0.1; }
 
@@ -859,11 +885,11 @@ class Player {
         this.baseSpeed = (3 + job.stats.spd + shopSpd + artSpd + equipSpd);
         this.speed = this.baseSpeed;
         this.dmgMult = 1 + job.stats.dmg + shopDmg + artDmg + equipDmg;
-        this.cdReduc = Math.min(0.7, job.stats.cd + artCd + equipCd + shopCd); 
+        this.cdReduc = Math.min(0.8, job.stats.cd + artCd + equipCd + shopCd); 
         this.critChance = shopCrit + artCrit + equipCrit;
         this.regenRate = shopRegen + artRegen;
         this.revives = shopRevive;
-        this.evasion = shopEvasion;
+        this.evasion = shopEvasion + artEvasion;
         
         state.sessionStats.armor = shopArmor;
         state.sessionStats.knockbackMult = 1 + shopKnockback;
@@ -871,6 +897,7 @@ class Player {
         state.sessionStats.dashCdMult = (1 - artDash) * (1 - shopDashCd);
         state.sessionStats.areaMult += equipRing;
         state.sessionStats.durationMult += equipRing;
+        state.sessionStats.dmgReducPct = shopDmgReduc;
 
         this.size = 20;
         this.invuln = 0;
@@ -898,9 +925,11 @@ class Player {
         }
 
         let moveX = 0, moveY = 0;
+        let speedMult = 1;
+        if (saveData.currentUlt === 'berserk' && state.ult.activeTime > 0) speedMult = 2;
 
         if (this.dashTime > 0) {
-            this.x += this.dashVec.x * 15; this.y += this.dashVec.y * 15;
+            this.x += this.dashVec.x * 15 * speedMult; this.y += this.dashVec.y * 15 * speedMult;
             this.dashTime--;
             if(this.dashTime % 2 === 0) state.particles.push(new Particle(this.x, this.y, '#00ffcc', 0, 15, 10)); // Afterimage
         } else {
@@ -920,7 +949,7 @@ class Player {
             }
 
             if (dx !== 0 || dy !== 0) { 
-                moveX = dx * this.speed; moveY = dy * this.speed;
+                moveX = dx * this.speed * speedMult; moveY = dy * this.speed * speedMult;
                 this.x += moveX; this.y += moveY; 
             }
         }
@@ -964,6 +993,8 @@ class Player {
             return;
         }
 
+        // Damage Reduction
+        amt = amt * (1 - state.sessionStats.dmgReducPct);
         amt = Math.max(1, amt - state.sessionStats.armor);
         this.hp -= amt;
         this.invuln = 30 + (saveData.upgrades.invuln || 0) * 12; // +0.2s per level
@@ -987,6 +1018,12 @@ class Player {
         ctx.save();
         ctx.translate(this.x, this.y);
         
+        // Berserk scale
+        if (saveData.currentUlt === 'berserk' && state.ult.activeTime > 0) {
+            const scale = 1.5;
+            ctx.scale(scale, scale);
+        }
+
         // Dash Cooldown Indicator
         if(this.dashCd > 0) {
             ctx.beginPath(); ctx.arc(0, 0, this.size + 8, 0, (Math.PI * 2) * (1 - this.dashCd/(120*(1-this.cdReduc/2)*state.sessionStats.dashCdMult)));
@@ -1014,6 +1051,14 @@ class Player {
             ctx.beginPath(); ctx.moveTo(15, -10); ctx.lineTo(22, -25); ctx.lineTo(5, -18); ctx.fill();
             ctx.beginPath(); ctx.arc(0, 0, this.size, 0, Math.PI * 2); ctx.fill();
             ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(-7, -2, 4, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(7, -2, 4, 0, Math.PI*2); ctx.fill();
+        } else if (this.skin === 'ninja') {
+            ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(0, 0, this.size, 0, Math.PI*2); ctx.fill(); // Hood
+            ctx.fillStyle = '#ffccaa'; ctx.beginPath(); ctx.rect(-8, -4, 16, 6); ctx.fill(); // Face
+            ctx.fillStyle = '#f00'; ctx.beginPath(); ctx.moveTo(15, -5); ctx.lineTo(25, -15); ctx.lineTo(15, -15); ctx.fill(); // Scarf
+        } else if (this.skin === 'paladin') {
+            ctx.fillStyle = '#eee'; ctx.beginPath(); ctx.arc(0, 0, this.size, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#ffd700'; ctx.beginPath(); ctx.moveTo(0, -25); ctx.lineTo(-5, -15); ctx.lineTo(5, -15); ctx.fill(); // Halo
+            ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 15); ctx.moveTo(-5, 5); ctx.lineTo(5, 5); ctx.strokeStyle = '#ffd700'; ctx.lineWidth=2; ctx.stroke(); // Cross
         } else {
             ctx.beginPath(); ctx.arc(0, 0, this.size, 0, Math.PI * 2); ctx.fill();
             ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.beginPath(); ctx.arc(-6, -4, 4, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(6, -4, 4, 0, Math.PI*2); ctx.fill();
@@ -1039,15 +1084,12 @@ class Enemy {
         if (type === 'SQUARE') { this.hp = 10*scaler; this.speed = 1.5; this.size = 15; this.color = '#ff3333'; this.dmg = 10; }
         else if (type === 'TRIANGLE') { this.hp = 5*scaler; this.speed = 2.5; this.size = 12; this.color = '#ffcc00'; this.dmg = 15; }
         else if (type === 'PENTAGON') { this.hp = 20*scaler; this.speed = 1.0; this.size = 20; this.color = '#33ff33'; this.dmg = 20; }
-        else if (type === 'RHOMBUS') { this.hp = 15*scaler; this.speed = 4.0; this.size = 14; this.color = '#00ccff'; this.dmg = 15; }
         else if (type === 'OCTAGON') { this.hp = 80*scaler; this.speed = 0.8; this.size = 30; this.color = '#9900ff'; this.dmg = 30; }
         else if (type === 'SHOOTER') { this.hp = 15*scaler; this.speed = 1.2; this.size = 18; this.color = '#ff5500'; this.dmg = 15; }
-        else if (type === 'VOLATILE') { this.hp = 8*scaler; this.speed = 3.5; this.size = 12; this.color = '#550000'; this.dmg = 50; }
         else if (type === 'SWARM') { this.hp = 2*scaler; this.speed = 3.0; this.size = 8; this.color = '#bc13fe'; this.dmg = 5; }
         else if (type === 'WORM_HEAD') { this.hp = 150*scaler; this.speed = 2.0; this.size = 20; this.color = '#8800ff'; this.dmg = 20; }
         else if (type === 'WORM_BODY') { this.hp = 500*scaler; this.speed = 2.0; this.size = 18; this.color = '#6600cc'; this.dmg = 10; }
         else if (type === 'TANK') { this.hp = 100*scaler; this.speed = 0.6; this.size = 35; this.color = '#444'; this.dmg = 30; }
-        else if (type === 'DASHER') { this.hp = 25*scaler; this.speed = 1.5; this.size = 16; this.color = '#ff9900'; this.dmg = 20; this.dashMode = false; this.dashCool = 100; }
         else if (type === 'SPLITTER') { this.hp = 40*scaler; this.speed = 1.0; this.size = 22; this.color = '#00ff99'; this.dmg = 20; }
         else if (type === 'SPLIT_MINI') { this.hp = 15*scaler; this.speed = 2.0; this.size = 12; this.color = '#00ff99'; this.dmg = 10; }
         
@@ -1077,27 +1119,6 @@ class Enemy {
                 this.shootTimer = 0;
                 state.projectiles.push(new Projectile(this.x, this.y, (dx/dist)*5, (dy/dist)*5, 10 * (state.isVoidMode?1.5:1), '#ff3333', 100, 5, 'enemy_bullet'));
             }
-        } else if (this.type === 'VOLATILE') {
-            this.x += (dx / dist) * this.speed; this.y += (dy / dist) * this.speed;
-            if (dist < 80) {
-                this.volatileTimer++;
-                this.color = this.volatileTimer % 10 < 5 ? '#ff0000' : '#fff';
-                if (this.volatileTimer > 30) {
-                    createExplosion(this.x, this.y, '#ff0000', 5);
-                    if (dist < 80) player.takeDamage(this.dmg);
-                    removeEnemy(this);
-                }
-            } else { this.volatileTimer = 0; this.color = '#550000'; }
-        } else if (this.type === 'DASHER') {
-             if (this.dashMode) {
-                 this.x += (dx / dist) * this.speed * 4; this.y += (dy / dist) * this.speed * 4;
-                 this.dashCool--;
-                 if (this.dashCool <= 0) { this.dashMode = false; this.dashCool = 100 + Math.random()*100; }
-             } else {
-                 this.x += (dx / dist) * this.speed; this.y += (dy / dist) * this.speed;
-                 this.dashCool--;
-                 if (this.dashCool <= 0 && dist < 300) { this.dashMode = true; this.dashCool = 40; createPopup("!", this.x, this.y - 20, "#ff0000"); }
-             }
         } else if (this.type === 'WORM_HEAD') {
              const angle = Math.atan2(dy, dx);
              this.x += Math.cos(angle) * this.speed;
@@ -1157,7 +1178,7 @@ class Enemy {
         else {
              if (isGoldRush || rand < (state.isVoidMode ? 0.2 : 0.1) * (1+luck*0.1)) { // Increased coin chance
                  let it = new Item(this.x, this.y, 300, 'XP'); // Increased base coin value
-                 it.isCoin = true; it.color = '#ffd700'; it.val = 300;
+                 it.isCoin = true; it.color = '#ffd700'; it.val = 500;
                  state.items.push(it);
              } else {
                  state.items.push(new Item(this.x, this.y, 2 * (state.isVoidMode?2:1), 'XP')); 
@@ -1245,7 +1266,7 @@ class Item {
             }
             else if (this.isCoin) { 
                 // Increased Coin value (base 200)
-                const baseVal = this.val || 200;
+                const baseVal = this.val || 500;
                 const gain = Math.floor(baseVal * (1 + saveData.upgrades.greed * 0.1) * state.sessionStats.greedMult * (saveData.artifacts.skull ? 1.3 : 1));
                 state.coins += gain; 
                 saveData.coins += gain; // Add to wallet immediately
@@ -1276,12 +1297,16 @@ class Projectile {
         this.x = x; this.y = y; this.vx = vx; this.vy = vy; this.dmg = dmg; this.color = color; 
         this.duration = duration * (1 + (saveData.upgrades.duration || 0) * 0.1) * state.sessionStats.durationMult; 
         this.size = size * state.sessionStats.sizeMult * state.sessionStats.areaMult; 
-        this.type = type; // bullet, missile, slash, laser, enemy_bullet, boomerang, arrow
+        this.type = type; // bullet, missile, slash, laser, enemy_bullet, boomerang, arrow, scythe, grenade
         this.hitList = []; this.knockback = knockback;
         this.angle = Math.atan2(vy, vx);
         this.returning = false; // For boomerang
+        this.frozen = false;
+        this.targetX = 0; this.targetY = 0; // For grenade
     }
     update() { 
+        if(this.frozen) return false;
+
         if (this.type === 'boomerang') {
             if (!this.returning) {
                 this.x += this.vx; this.y += this.vy;
@@ -1294,6 +1319,33 @@ class Projectile {
                 this.x += (dx/dist) * speed; this.y += (dy/dist) * speed;
                 this.angle += 0.3;
                 if(dist < 20) return true; // Caught
+            }
+            return false;
+        }
+
+        if (this.type === 'scythe') {
+            this.angle += 0.2;
+            const r = 80 * state.sessionStats.areaMult * state.sessionStats.sizeMult;
+            this.x = state.player.x + Math.cos(this.angle) * r;
+            this.y = state.player.y + Math.sin(this.angle) * r;
+            this.duration--;
+            return this.duration <= 0;
+        }
+
+        if (this.type === 'grenade') {
+            this.x += this.vx; this.y += this.vy;
+            // Arc logic visual only? or simple movement
+            this.duration--;
+            if (this.duration <= 0) {
+                // Explode
+                createExplosion(this.x, this.y, '#00ff44', 10, 10);
+                state.shockwaves.push(new Shockwave(this.x, this.y, 80 * state.sessionStats.areaMult, '#00ff44'));
+                state.enemies.forEach(e => {
+                    if (Math.hypot(e.x - this.x, e.y - this.y) < 80 * state.sessionStats.areaMult) {
+                        e.takeDamage(this.dmg);
+                    }
+                });
+                return true;
             }
             return false;
         }
@@ -1323,6 +1375,14 @@ class Projectile {
              ctx.beginPath(); ctx.rect(-10, -3, 20, 6); ctx.fill();
              ctx.beginPath(); ctx.rect(-3, -10, 6, 20); ctx.fill();
              ctx.restore();
+        } else if (this.type === 'scythe') {
+             ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.angle);
+             ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(15, -5); ctx.lineTo(20, 10); ctx.lineTo(5, 5); ctx.fill();
+             ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+             ctx.restore();
+        } else if (this.type === 'grenade') {
+             ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI*2); ctx.fill();
+             ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(this.x - 2, this.y - 2, 2, 0, Math.PI*2); ctx.fill();
         } else if (this.type === 'bullet') {
              ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI*2); ctx.fill();
         } else if (this.type === 'missile' || this.type === 'nuke') {
@@ -1357,6 +1417,52 @@ class Mine {
         ctx.beginPath(); ctx.arc(this.x, this.y, 8, 0, Math.PI*2); ctx.fill();
         ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.stroke();
         if(this.active) { ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2); ctx.strokeStyle = 'rgba(255,50,0,0.2)'; ctx.stroke(); }
+    }
+}
+
+class GasCloud {
+    constructor(x, y, dmg, duration, size) {
+        this.x = x; this.y = y; this.dmg = dmg; this.duration = duration;
+        this.size = size * state.sessionStats.areaMult;
+    }
+    update() {
+        this.duration--;
+        if (state.time % 20 === 0) {
+            state.enemies.forEach(e => {
+                if (Math.hypot(e.x - this.x, e.y - this.y) < this.size) e.takeDamage(this.dmg);
+            });
+        }
+        return this.duration <= 0;
+    }
+    draw(ctx) {
+        ctx.fillStyle = `rgba(100, 255, 0, ${this.duration/100 * 0.4})`;
+        ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI*2); ctx.fill();
+    }
+}
+
+class AcidPool {
+    constructor(x, y, duration, size, dmg) {
+        this.x = x; this.y = y; this.duration = duration; 
+        this.size = size * state.sessionStats.areaMult; this.dmg = dmg;
+    }
+    update() {
+        this.duration--;
+        if (state.time % 20 === 0) { // Tick damage
+            state.enemies.forEach(e => {
+                if(Math.hypot(e.x - this.x, e.y - this.y) < this.size) {
+                    e.takeDamage(this.dmg);
+                }
+            });
+        }
+        return this.duration <= 0;
+    }
+    draw(ctx) {
+        ctx.fillStyle = 'rgba(50, 255, 50, 0.4)';
+        ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI*2); ctx.fill();
+        if(Math.random()<0.1) {
+             ctx.fillStyle = '#0f0';
+             ctx.beginPath(); ctx.arc(this.x + (Math.random()-0.5)*this.size, this.y + (Math.random()-0.5)*this.size, 3, 0, Math.PI*2); ctx.fill();
+        }
     }
 }
 
@@ -1405,7 +1511,9 @@ class SpikeBall {
         this.radius = 15;
     }
     update(speedMult, areaMult) {
-        const speed = 10 * speedMult;
+        let speed = 10 * speedMult;
+        if (saveData.currentUlt === 'berserk' && state.ult.activeTime > 0) { speed *= 1.5; areaMult *= 1.5; }
+        
         this.x += this.vx; this.y += this.vy;
         
         // Bounce within a virtual box around player
@@ -1569,10 +1677,10 @@ function startGame(startWeaponId) {
     
     // Reset state arrays
     state.enemies = []; state.particles = []; state.items = []; state.projectiles = [];
-    state.popups = []; state.shockwaves = []; state.mines = []; state.drones = []; state.voidZones = []; state.ionBeams = []; state.worms = []; state.spikeBalls = [];
+    state.popups = []; state.shockwaves = []; state.mines = []; state.drones = []; state.voidZones = []; state.ionBeams = []; state.worms = []; state.spikeBalls = []; state.acidPools = []; state.gasClouds = [];
     
     // Reset Session Stats
-    state.sessionStats = { sizeMult: 1, projectileCount: 0, projectileSpeed: 1, areaMult: 1, durationMult: 1, knockbackMult: 1, dashCdMult: 1, pickupRangeMult: 1, armor: 0, greedMult: 1, growth: 0 };
+    state.sessionStats = { sizeMult: 1, projectileCount: 0, projectileSpeed: 1, areaMult: 1, durationMult: 1, knockbackMult: 1, dashCdMult: 1, pickupRangeMult: 1, armor: 0, greedMult: 1, growth: 0, dmgReducPct: 0 };
     state.weapons = {};
     state.meta = { reroll: saveData.upgrades.reroll, skip: saveData.upgrades.skip, banish: saveData.upgrades.banish, banishedItems: [] };
     
@@ -1618,9 +1726,9 @@ function update() {
     // Difficulty
     if (state.time % 60 === 0) state.score++;
     
-    // Spawning
-    const spawnRate = Math.max(10, 60 - Math.floor(state.time / 60));
-    if (state.time % spawnRate === 0 && state.enemies.length < 300) spawnEnemy();
+    // Spawning: Reduced cap and slowed rate
+    const spawnRate = Math.max(20, 80 - Math.floor(state.time / 60)); // Slower spawn rate
+    if (state.time % spawnRate === 0 && state.enemies.length < 150) spawnEnemy(); // Cap reduced to 150
 
     // Boss Spawn
     if (state.time % (BOSS_SPAWN_TIME * 60) === 0 && !state.boss && state.bossRespawnTimer <= 0) {
@@ -1668,8 +1776,10 @@ function update() {
                     if (e.takeDamage(p.dmg, p.knockback, state.player.x, state.player.y)) {
                         removeEnemy(e);
                     }
-                    p.hitList.push(e);
-                    if (p.type === 'bullet' || p.type === 'enemy_bullet' || p.type === 'arrow') hit = true;
+                    if (p.type !== 'scythe') p.hitList.push(e); // Scythe hits continuously
+                    else { if(state.time%10===0) e.takeDamage(p.dmg*0.5); } // Scythe tick damage
+
+                    if (p.type === 'bullet' || p.type === 'enemy_bullet' || p.type === 'arrow' || p.type === 'grenade') hit = true;
                     // Frost
                     if (state.weapons.frost) { e.frozen = 60 * state.sessionStats.durationMult; }
                 }
@@ -1683,6 +1793,8 @@ function update() {
     state.shockwaves = state.shockwaves.filter(s => !s.update());
     state.mines = state.mines.filter(m => !m.update());
     state.ionBeams = state.ionBeams.filter(i => !i.update());
+    state.acidPools = state.acidPools.filter(a => !a.update());
+    state.gasClouds = state.gasClouds.filter(g => !g.update());
     state.singularity && state.singularity.update() && (state.singularity = null);
     
     state.drones.forEach(d => d.update());
@@ -1709,7 +1821,8 @@ function spawnEnemy() {
     const ex = state.player.x + Math.cos(angle) * r;
     const ey = state.player.y + Math.sin(angle) * r;
     
-    const types = ['SQUARE', 'TRIANGLE', 'PENTAGON', 'RHOMBUS', 'SHOOTER', 'VOLATILE', 'TANK', 'DASHER', 'SPLITTER'];
+    // Removed Fast/Annoying Mobs: RHOMBUS, VOLATILE, DASHER
+    const types = ['SQUARE', 'TRIANGLE', 'PENTAGON', 'SHOOTER', 'TANK', 'SPLITTER'];
     let type = types[Math.min(types.length-1, Math.floor(state.time / 1200))]; 
     if (Math.random() < 0.2) type = types[Math.floor(Math.random() * Math.min(types.length, 5 + state.level/5))];
     
@@ -1778,6 +1891,13 @@ function checkEvolution(wid) {
 function updateWeapons() {
     const p = state.player;
     const stats = state.sessionStats;
+    let speedMult = 1;
+    let sizeMult = 1;
+
+    // Berserk Buffs
+    if (saveData.currentUlt === 'berserk' && state.ult.activeTime > 0) {
+        speedMult = 1.5; sizeMult = 1.5;
+    }
 
     // Blaster
     if (state.weapons.blaster) {
@@ -1791,9 +1911,9 @@ function updateWeapons() {
                 const count = 1 + stats.projectileCount + (state.weapons.multishot ? 1 : 0);
                 for(let i=0; i<count; i++) {
                     const angle = Math.atan2(target.y - p.y, target.x - p.x) + (i - count/2)*0.1;
-                    const vx = Math.cos(angle) * 10 * stats.projectileSpeed;
-                    const vy = Math.sin(angle) * 10 * stats.projectileSpeed;
-                    state.projectiles.push(new Projectile(p.x, p.y, vx, vy, 15 * w.level, w.evolved?'#ff0099':'#ffff00', 60, w.evolved?8:4, w.evolved?'laser':'bullet'));
+                    const vx = Math.cos(angle) * 10 * stats.projectileSpeed * speedMult;
+                    const vy = Math.sin(angle) * 10 * stats.projectileSpeed * speedMult;
+                    state.projectiles.push(new Projectile(p.x, p.y, vx, vy, 15 * w.level, w.evolved?'#ff0099':'#ffff00', 60, (w.evolved?8:4)*sizeMult, w.evolved?'laser':'bullet'));
                 }
             }
         }
@@ -1805,15 +1925,15 @@ function updateWeapons() {
         w.timer++;
         if (w.timer > 50 * (1 - p.cdReduc)) {
             w.timer = 0;
-            state.projectiles.push(new Projectile(p.x + (state.facingRight?40:-40), p.y, state.facingRight?2:-2, 0, 25*w.level, '#fff', 10, 40, 'slash', 5));
+            state.projectiles.push(new Projectile(p.x + (state.facingRight?40:-40), p.y, state.facingRight?2:-2, 0, 25*w.level, '#fff', 10, 40*sizeMult, 'slash', 5));
         }
     }
 
     // Orbit
     if (state.weapons.orbit) {
         const w = state.weapons.orbit;
-        w.timer += 0.05 * stats.projectileSpeed;
-        const r = 80 * stats.areaMult;
+        w.timer += 0.05 * stats.projectileSpeed * speedMult;
+        const r = 80 * stats.areaMult * sizeMult;
         const count = w.level + stats.projectileCount;
         for(let i=0; i<count; i++) {
             const angle = w.timer + (i * (Math.PI*2/count));
@@ -1821,7 +1941,7 @@ function updateWeapons() {
             const oy = p.y + Math.sin(angle) * r;
             // Projectile visual only, damage logic via proximity
             state.enemies.forEach(e => {
-                if(Math.hypot(e.x - ox, e.y - oy) < 20) e.takeDamage(10 * w.level, 1, p.x, p.y);
+                if(Math.hypot(e.x - ox, e.y - oy) < 20 * sizeMult) e.takeDamage(10 * w.level, 1, p.x, p.y);
             });
             // Draw handled in draw() loop or push temp projectiles?
             // Actually let's just push a short lived projectile every frame for visual or draw manually
@@ -1838,7 +1958,7 @@ function updateWeapons() {
             let target = getNearestEnemy();
             if (target) {
                 const dx = target.x - p.x; const dy = target.y - p.y; const dist = Math.sqrt(dx*dx+dy*dy);
-                state.projectiles.push(new Projectile(p.x, p.y, (dx/dist)*5, (dy/dist)*5, 40*w.level, '#ff5500', 100, 6, w.evolved?'nuke':'missile'));
+                state.projectiles.push(new Projectile(p.x, p.y, (dx/dist)*5, (dy/dist)*5, 40*w.level, '#ff5500', 100, 6*sizeMult, w.evolved?'nuke':'missile'));
             }
         }
     }
@@ -1849,7 +1969,7 @@ function updateWeapons() {
         w.timer++;
         if (w.timer > 120 * (1 - p.cdReduc)) {
             w.timer = 0;
-            state.mines.push(new Mine(p.x, p.y, 50*w.level, 60));
+            state.mines.push(new Mine(p.x, p.y, 50*w.level, 60*sizeMult));
         }
     }
 
@@ -1860,7 +1980,7 @@ function updateWeapons() {
         if (w.timer > 200 * (1 - p.cdReduc)) {
             w.timer = 0;
             const t = getRandomEnemy();
-            if (t) state.ionBeams.push(new IonBeam(t.x, t.y, 100*w.level, 60*stats.areaMult));
+            if (t) state.ionBeams.push(new IonBeam(t.x, t.y, 100*w.level, 60*stats.areaMult*sizeMult));
         }
     }
 
@@ -1872,9 +1992,9 @@ function updateWeapons() {
             w.timer = 0;
             let target = getNearestEnemy();
             const angle = target ? Math.atan2(target.y-p.y, target.x-p.x) : (state.facingRight?0:Math.PI);
-            const vx = Math.cos(angle) * 8 * stats.projectileSpeed;
-            const vy = Math.sin(angle) * 8 * stats.projectileSpeed;
-            state.projectiles.push(new Projectile(p.x, p.y, vx, vy, 20*w.level, '#00ff88', 40, 8, 'boomerang'));
+            const vx = Math.cos(angle) * 8 * stats.projectileSpeed * speedMult;
+            const vy = Math.sin(angle) * 8 * stats.projectileSpeed * speedMult;
+            state.projectiles.push(new Projectile(p.x, p.y, vx, vy, 20*w.level, '#00ff88', 40, 8*sizeMult, 'boomerang'));
         }
     }
 
@@ -1883,9 +2003,9 @@ function updateWeapons() {
         const w = state.weapons.flame;
         if (state.time % 5 === 0) { // High fire rate
             const angle = (state.facingRight ? 0 : Math.PI) + (Math.random()-0.5)*0.5;
-            const vx = Math.cos(angle) * 6;
-            const vy = Math.sin(angle) * 6;
-            state.projectiles.push(new Projectile(p.x, p.y, vx, vy, 5*w.level, '#ffaa00', 30, 6, 'bullet'));
+            const vx = Math.cos(angle) * 6 * speedMult;
+            const vy = Math.sin(angle) * 6 * speedMult;
+            state.projectiles.push(new Projectile(p.x, p.y, vx, vy, 5*w.level, '#ffaa00', 30, 6*sizeMult, 'bullet'));
         }
     }
 
@@ -1900,7 +2020,7 @@ function updateWeapons() {
             // Instant hit line
             createExplosion(p.x + Math.cos(angle)*300, p.y + Math.sin(angle)*300, '#00ffff', 5);
             // Visual line
-            state.projectiles.push(new Projectile(p.x, p.y, Math.cos(angle)*30, Math.sin(angle)*30, 60*w.level, '#00ffff', 5, 2, 'laser')); 
+            state.projectiles.push(new Projectile(p.x, p.y, Math.cos(angle)*30, Math.sin(angle)*30, 60*w.level, '#00ffff', 5, 2*sizeMult, 'laser')); 
             // Hit logic handled by projectile update usually, but for instant hit:
             // Just simulate a super fast projectile or raycast logic here
             // For simplicity, spawn a fast invisible projectile
@@ -1915,8 +2035,102 @@ function updateWeapons() {
              w.timer = 0;
              let target = getNearestEnemy();
              const angle = target ? Math.atan2(target.y-p.y, target.x-p.x) : (Math.random()*Math.PI*2);
-             state.projectiles.push(new Projectile(p.x, p.y, Math.cos(angle)*12, Math.sin(angle)*12, 40*w.level, '#ddd', 60, 5, 'arrow', 10));
+             state.projectiles.push(new Projectile(p.x, p.y, Math.cos(angle)*12, Math.sin(angle)*12, 40*w.level, '#ddd', 60, 5*sizeMult, 'arrow', 10));
          }
+    }
+
+    // Wand
+    if (state.weapons.wand) {
+        const w = state.weapons.wand;
+        w.timer++;
+        if (w.timer > 30 * (1 - p.cdReduc)) {
+            w.timer = 0;
+            let target = getNearestEnemy();
+            if (target) {
+                const angle = Math.atan2(target.y - p.y, target.x - p.x);
+                state.projectiles.push(new Projectile(p.x, p.y, Math.cos(angle)*8, Math.sin(angle)*8, 15*w.level, '#0099ff', 60, 5*sizeMult, 'bullet'));
+            }
+        }
+    }
+
+    // Acid
+    if (state.weapons.acid) {
+        const w = state.weapons.acid;
+        w.timer++;
+        if (w.timer > 180 * (1 - p.cdReduc)) {
+            w.timer = 0;
+            // Throw nearby
+            const ax = p.x + (Math.random()-0.5)*200;
+            const ay = p.y + (Math.random()-0.5)*200;
+            state.acidPools.push(new AcidPool(ax, ay, 300, 40*sizeMult, 5*w.level));
+            createExplosion(ax, ay, '#00ff00', 5);
+        }
+    }
+
+    // Meteor
+    if (state.weapons.meteor) {
+        const w = state.weapons.meteor;
+        w.timer++;
+        if (w.timer > 60 * (1 - p.cdReduc)) {
+            w.timer = 0;
+            const mx = p.x + (Math.random()-0.5)*400;
+            const my = p.y + (Math.random()-0.5)*400;
+            // Immediate impact
+            createExplosion(mx, my, '#ff4400', 10, 5*sizeMult);
+            state.shockwaves.push(new Shockwave(mx, my, 80*stats.areaMult*sizeMult, '#ff4400'));
+            state.enemies.forEach(e => {
+                if(Math.hypot(e.x - mx, e.y - my) < 80*stats.areaMult*sizeMult) e.takeDamage(50*w.level);
+            });
+        }
+    }
+
+    // Poison
+    if (state.weapons.poison) {
+        const w = state.weapons.poison;
+        w.timer++;
+        if (w.timer > 30 * (1 - p.cdReduc)) {
+            w.timer = 0;
+            state.gasClouds.push(new GasCloud(p.x, p.y, 10*w.level, 120, 30*sizeMult));
+        }
+    }
+
+    // Chain Scythe (New)
+    if (state.weapons.scythe) {
+        const w = state.weapons.scythe;
+        // Logic handled in projectile update (creates persistent projectile logic or checks hit here)
+        // Let's use persistent projectile approach
+        if (w.timer === 0) {
+            // Spawn scythes
+            const count = 1 + stats.projectileCount;
+            for(let i=0; i<count; i++) {
+                const proj = new Projectile(p.x, p.y, 0, 0, 15*w.level, '#eee', 999999, 10*sizeMult, 'scythe');
+                proj.angle = i * (Math.PI*2/count);
+                state.projectiles.push(proj);
+            }
+            w.timer = 1; 
+        }
+        // Keep projectile alive? Actually, better to re-spawn them or update existing.
+        // Simplified: Re-spawn scythes every frame is bad.
+        // Check if scythe projectiles exist?
+        const scythes = state.projectiles.filter(proj => proj.type === 'scythe');
+        if (scythes.length < 1 + stats.projectileCount) {
+             state.projectiles.push(new Projectile(p.x, p.y, 0, 0, 15*w.level, '#eee', 10, 10*sizeMult, 'scythe'));
+        }
+    }
+
+    // Grenade (New)
+    if (state.weapons.grenade) {
+        const w = state.weapons.grenade;
+        w.timer++;
+        if (w.timer > 70 * (1 - p.cdReduc)) {
+            w.timer = 0;
+            let target = getNearestEnemy();
+            const angle = target ? Math.atan2(target.y-p.y, target.x-p.x) : (state.facingRight?0:Math.PI);
+            const dist = target ? Math.hypot(target.x-p.x, target.y-p.y) : 200;
+            const vx = Math.cos(angle) * 8;
+            const vy = Math.sin(angle) * 8;
+            state.projectiles.push(new Projectile(p.x, p.y, vx, vy, 40*w.level, '#00ff44', dist/8, 8*sizeMult, 'grenade'));
+        }
     }
 
     // Singularity (Hidden)
@@ -1958,6 +2172,12 @@ function draw() {
     ctx.translate(cx + px * (1-ZOOM), cy + py * (1-ZOOM)); // Parallax anchor? No just zoom center
     ctx.setTransform(ZOOM, 0, 0, ZOOM, CANVAS_W/2 - px*ZOOM, CANVAS_H/2 - py*ZOOM);
 
+    // Shake Effect (Ultimate)
+    if (state.ult.activeTime > 580) { // Shake for first few frames
+        const shake = (Math.random()-0.5) * 20;
+        ctx.translate(shake, shake);
+    }
+
     // Grid (Lightweight)
     ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 1;
     const gridSize = 100;
@@ -1974,6 +2194,8 @@ function draw() {
     state.stars.forEach(s => s.draw(ctx));
     
     state.voidZones.forEach(z => { ctx.fillStyle='rgba(100,0,200,0.3)'; ctx.beginPath(); ctx.arc(z.x, z.y, 50, 0, Math.PI*2); ctx.fill(); });
+    state.acidPools.forEach(a => a.draw(ctx));
+    state.gasClouds.forEach(g => g.draw(ctx));
     
     state.mines.forEach(m => m.draw(ctx));
     state.ionBeams.forEach(i => i.draw(ctx));
@@ -2120,6 +2342,9 @@ function selectUpgrade(u) {
             if(u.id === 'greed') state.sessionStats.greedMult += 0.2;
             if(u.id === 'growth') { state.sessionStats.growth += 0.05; state.player.maxHp *= 1.05; state.player.hp += 5; }
             if(u.id === 'armor') state.sessionStats.armor += 1;
+            if(u.id === 'haste') { state.sessionStats.projectileSpeed += 0.1; state.player.speed += 0.5; }
+            if(u.id === 'overclock') state.player.cdReduc = Math.min(0.9, state.player.cdReduc + 0.1); // Additive CD
+            if(u.id === 'titanium') state.sessionStats.dmgReducPct += 0.05;
         }
     }
     
@@ -2137,7 +2362,14 @@ function doReroll() {
     if (state.meta.reroll > 0) { state.meta.reroll--; document.getElementById('cnt-reroll').innerText = state.meta.reroll; generateUpgradeCards(); }
 }
 function doSkip() {
-    if (state.meta.skip > 0) { state.meta.skip--; document.getElementById('upgrade-screen').classList.add('hidden'); state.paused = false; state.xp += state.nextLevelXp * 0.2; }
+    if (state.meta.skip > 0) { 
+        state.meta.skip--; 
+        state.coins += 200; // Reward for skipping
+        addXp(state.nextLevelXp * 0.25); // 25% Refund
+        createPopup("+200 🪙 & +25% XP", state.player.x, state.player.y, '#ffd700');
+        document.getElementById('upgrade-screen').classList.add('hidden'); 
+        state.paused = false; 
+    }
 }
 let banishMode = false;
 function toggleBanishMode() {
@@ -2219,22 +2451,33 @@ function useUltimate() {
     const type = saveData.currentUlt;
     createPopup("ULTIMATE ACTIVATED!", state.player.x, state.player.y - 60, '#ff0099');
     
+    // Flash Effect
+    const flash = document.getElementById('flash-overlay');
+    flash.style.opacity = 0.8;
+    setTimeout(() => flash.style.opacity = 0, 100);
+
     if (type === 'nuclear') {
-        state.shockwaves.push(new Shockwave(state.player.x, state.player.y, 1000, '#ff3300'));
+        state.shockwaves.push(new Shockwave(state.player.x, state.player.y, 2000, '#ff3300'));
         createExplosion(state.player.x, state.player.y, '#ff3300', 50);
         state.enemies.forEach(e => {
-            if(!(e instanceof Boss)) e.takeDamage(9999); else e.takeDamage(2000);
+            if(!(e instanceof Boss)) e.takeDamage(9999); else e.takeDamage(5000);
         });
-        document.body.style.background = '#300';
-        setTimeout(() => document.body.style.background = '#000', 100);
+        // Clear projectiles
+        state.projectiles = state.projectiles.filter(p => p.type !== 'enemy_bullet');
     } else if (type === 'chrono') {
         state.enemies.forEach(e => e.frozen = 300); // 5 sec freeze
-        document.body.style.filter = 'grayscale(100%)';
+        state.projectiles.forEach(p => p.frozen = true); // Freeze projectiles
+        setTimeout(() => state.projectiles.forEach(p => p.frozen = false), 5000);
+        document.body.style.filter = 'grayscale(100%) invert(10%)';
         setTimeout(() => document.body.style.filter = 'none', 5000);
     } else if (type === 'berserk') {
         state.player.cdReduc = 0.9; // 90% CD reduction
         state.player.speed *= 2;
-        setTimeout(() => { state.player.speed /= 2; state.player.cdReduc = new Player().cdReduc; }, 10000);
+        // Size mult handled in update loop
+        setTimeout(() => { 
+            state.player.speed /= 2; 
+            state.player.cdReduc = new Player().cdReduc; 
+        }, 10000);
     }
 }
 
@@ -2322,7 +2565,9 @@ function renderShop() {
         // New
         {id:'velocity', name:'가속기', desc:'투사체 속도 +10%'}, {id:'crit_dmg', name:'치명타 연마', desc:'치명타 데미지 +20%'},
         {id:'healing', name:'응급 처치', desc:'회복 효율 +20%'}, {id:'invuln', name:'보호막', desc:'피격 무적시간 +0.2초'},
-        {id:'agility', name:'반사 신경', desc:'대시 쿨타임 -5%'}
+        {id:'agility', name:'반사 신경', desc:'대시 쿨타임 -5%'},
+        // v17.1 New
+        {id:'overclock', name:'오버클럭', desc:'공격 속도 +10%'}, {id:'titanium', name:'티타늄 합금', desc:'받는 피해 -5%'}
     ];
 
     upgrades.forEach(u => {
