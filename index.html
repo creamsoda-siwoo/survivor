@@ -630,7 +630,9 @@ const CLASSES = [
 const ULTIMATES = [
     { id: 'nuclear', name: '뉴클리어', desc: '화면 전체 적과 탄막을 소멸시킵니다.', icon: '☢️', color: '#ff3300' },
     { id: 'chrono', name: '크로노 브레이크', desc: '모든 적과 투사체를 5초간 정지시킵니다.', icon: '⏳', color: '#00ccff' },
-    { id: 'berserk', name: '버서커', desc: '거대화하며 공격 능력과 범위가 대폭 증가합니다.', icon: '🩸', color: '#ff0055' }
+    { id: 'berserk', name: '버서커', desc: '거대화하며 공격 능력과 범위가 대폭 증가합니다.', icon: '🩸', color: '#ff0055' },
+    { id: 'storm', name: '천둥 폭풍', desc: '지속적으로 적에게 벼락을 내립니다.', icon: '⚡', color: '#ffd700' },
+    { id: 'divine', name: '천상의 보호막', desc: '10초간 무적 상태가 되며 적을 밀쳐냅니다.', icon: '🛡️', color: '#ffffff' }
 ];
 
 const SKINS = [
@@ -1083,6 +1085,7 @@ class Enemy {
         this.type = type; this.x = x; this.y = y; this.pushX = 0; this.pushY = 0; this.frozen = 0;
         this.shootTimer = 0; this.volatileTimer = 0; this.isElite = isElite;
         this.flashTime = 0;
+        this.dead = false; // Add dead flag for safe removal
         
         let scaler = 1 + (state.time / 180);
         if (state.isVoidMode) scaler *= 2; 
@@ -1118,9 +1121,15 @@ class Enemy {
         if(this.flashTime > 0) this.flashTime--;
         this.x += this.pushX; this.y += this.pushY; this.pushX *= 0.9; this.pushY *= 0.9;
         
+        // Prevent NaN logic
+        if (isNaN(this.x)) this.x = player.x + 400;
+        if (isNaN(this.y)) this.y = player.y + 400;
+
         if (this.type === 'WORM_BODY') return; 
 
-        const dx = player.x - this.x, dy = player.y - this.y, dist = Math.sqrt(dx*dx + dy*dy);
+        const dx = player.x - this.x, dy = player.y - this.y;
+        let dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist === 0) dist = 0.001; // Avoid divide by zero
         
         if (this.type === 'SHOOTER') {
             if (dist > 300) { this.x += (dx / dist) * this.speed; this.y += (dy / dist) * this.speed; }
@@ -1166,6 +1175,7 @@ class Enemy {
         if (this.hp <= 0) { this.die(); return true; } return false;
     }
     die() { 
+        this.dead = true;
         createExplosion(this.x, this.y, this.color, 3); // Reduced particles
         if(this.type === 'SPLITTER') {
             state.enemies.push(new Enemy('SPLIT_MINI', this.x + 10, this.y));
@@ -1187,12 +1197,14 @@ class Enemy {
         else if (rand < 0.01 * (1+luck*0.2)) state.items.push(new Item(this.x, this.y, 0, 'MAGNET'));
         else if (rand < 0.02 * (1+luck*0.2)) state.items.push(new Item(this.x, this.y, 0, 'HEAL'));
         else {
-             if (isGoldRush || rand < (state.isVoidMode ? 0.2 : 0.1) * (1+luck*0.1)) { // Increased coin chance
-                 let it = new Item(this.x, this.y, 300, 'XP'); // Increased base coin value
-                 it.isCoin = true; it.color = '#ffd700'; it.val = 500;
-                 state.items.push(it);
-             } else {
-                 state.items.push(new Item(this.x, this.y, 2 * (state.isVoidMode?2:1), 'XP')); 
+             // Always drop XP gem
+             state.items.push(new Item(this.x, this.y, 2 * (state.isVoidMode?2:1), 'XP'));
+             
+             // If Gold Rush or Chance, ALSO drop Coin
+             if (isGoldRush || rand < (state.isVoidMode ? 0.2 : 0.1) * (1+luck*0.1)) {
+                 let coin = new Item(this.x + (Math.random()-0.5)*20, this.y + (Math.random()-0.5)*20, 300, 'XP'); 
+                 coin.isCoin = true; coin.color = '#ffd700'; coin.val = 500;
+                 state.items.push(coin);
              }
         }
         
@@ -1228,6 +1240,7 @@ class Boss extends Enemy {
         this.maxHp = this.hp; this.size = 60; this.speed = 1.2; this.color = '#bc13fe'; 
     }
     die() { 
+        this.dead = true;
         createExplosion(this.x, this.y, this.color, 20); 
         const coins = state.isVoidMode ? 100 : 50; // Increased drop count
         for(let i=0; i<coins; i++) { 
@@ -1738,8 +1751,8 @@ function update() {
     if (state.time % 60 === 0) state.score++;
     
     // Spawning: Reduced cap and slowed rate
-    const spawnRate = Math.max(20, 80 - Math.floor(state.time / 60)); // Slower spawn rate
-    if (state.time % spawnRate === 0 && state.enemies.length < 150) spawnEnemy(); // Cap reduced to 150
+    const spawnRate = Math.max(40, 100 - Math.floor(state.time / 60)); // Slower spawn rate
+    if (state.time % spawnRate === 0 && state.enemies.length < 100) spawnEnemy(); // Cap reduced to 100
 
     // Boss Spawn
     if (state.time % (BOSS_SPAWN_TIME * 60) === 0 && !state.boss && state.bossRespawnTimer <= 0) {
@@ -1762,11 +1775,45 @@ function update() {
 
     state.player.update();
     
+    // Active Ultimate Effects
+    if (state.ult.activeTime > 0) {
+        state.ult.activeTime--;
+        const ult = saveData.currentUlt;
+        
+        if (ult === 'storm' && state.time % 10 === 0) {
+            // Thunder Storm: Strike random enemy
+            const t = getRandomEnemy();
+            const tx = t ? t.x : state.player.x + (Math.random()-0.5)*600;
+            const ty = t ? t.y : state.player.y + (Math.random()-0.5)*600;
+            createExplosion(tx, ty, '#ffd700', 10);
+            state.shockwaves.push(new Shockwave(tx, ty, 60, '#ffd700'));
+            state.enemies.forEach(e => { if(Math.hypot(e.x-tx, e.y-ty) < 60) e.takeDamage(100); });
+        }
+        
+        if (ult === 'divine') {
+            state.player.invuln = 10; // Maintain invulnerability
+            // Push aura
+            state.enemies.forEach(e => {
+                const dist = Math.hypot(e.x - state.player.x, e.y - state.player.y);
+                if(dist < 150) {
+                    const angle = Math.atan2(e.y - state.player.y, e.x - state.player.x);
+                    e.x += Math.cos(angle) * 5;
+                    e.y += Math.sin(angle) * 5;
+                    e.takeDamage(5); // Holy burn
+                }
+            });
+        }
+    }
+    
     // Collision & Logic
-    state.enemies = state.enemies.filter(e => {
-        e.update(state.player);
-        return e.hp > 0;
+    const enemiesToRemove = [];
+    state.enemies.forEach(e => {
+        if (!e.dead) e.update(state.player);
+        if (e.dead) enemiesToRemove.push(e);
     });
+    
+    // Remove dead enemies safely after update loop
+    enemiesToRemove.forEach(e => removeEnemy(e));
 
     state.items = state.items.filter(i => {
         const picked = i.update(state.player);
@@ -1777,25 +1824,45 @@ function update() {
         let hit = false;
         if(p.update()) return false;
         
-        // Optimize collision detection with QuadTree or spatial hash if needed, but simple loop for now
-        // Simple optimization: only check if near
+        // Only check collision with live enemies
         for (const e of state.enemies) {
+            if (e.dead) continue;
             if (Math.abs(e.x - p.x) > e.size + p.size + 10 || Math.abs(e.y - p.y) > e.size + p.size + 10) continue;
             
             if (Math.hypot(e.x - p.x, e.y - p.y) < e.size + p.size) {
                 if (!p.hitList.includes(e)) {
-                    if (e.takeDamage(p.dmg, p.knockback, state.player.x, state.player.y)) {
-                        removeEnemy(e);
-                    }
-                    if (p.type !== 'scythe') p.hitList.push(e); // Scythe hits continuously
-                    else { if(state.time%10===0) e.takeDamage(p.dmg*0.5); } // Scythe tick damage
+                    // Check if bullet type is enemy_bullet or player bullet
+                    if (p.type === 'enemy_bullet') {
+                         if (!p.hitList.includes(state.player)) { // Logic for player hit? 
+                             // Usually enemy bullets collide with player, not enemies. 
+                             // But this loop iterates enemies. 
+                             // Enemy bullet collision with Player is handled in Player.update via separate check?
+                             // No, current logic only checks projectile vs enemies.
+                             // Enemy bullet hitting player logic:
+                         }
+                    } else {
+                        // Player projectile hitting enemy
+                        if (e.takeDamage(p.dmg, p.knockback, state.player.x, state.player.y)) {
+                            // Enemy died inside takeDamage
+                        }
+                        if (p.type !== 'scythe') p.hitList.push(e); 
+                        else { if(state.time%10===0) e.takeDamage(p.dmg*0.5); }
 
-                    if (p.type === 'bullet' || p.type === 'enemy_bullet' || p.type === 'arrow' || p.type === 'grenade') hit = true;
-                    // Frost
-                    if (state.weapons.frost) { e.frozen = 60 * state.sessionStats.durationMult; }
+                        if (p.type === 'bullet' || p.type === 'arrow' || p.type === 'grenade') hit = true;
+                        if (state.weapons.frost) { e.frozen = 60 * state.sessionStats.durationMult; }
+                    }
                 }
             }
         }
+        
+        // Enemy bullet collision with player
+        if (p.type === 'enemy_bullet') {
+             if (Math.hypot(state.player.x - p.x, state.player.y - p.y) < state.player.size + p.size) {
+                 state.player.takeDamage(p.dmg);
+                 hit = true;
+             }
+        }
+
         return !hit;
     });
     
@@ -1814,7 +1881,6 @@ function update() {
     updateWeapons();
     updateUI();
     
-    if (state.ult.activeTime > 0) state.ult.activeTime--;
     if (!state.ult.ready && state.ult.charge < 100) {
         state.ult.charge += 0.05 + (saveData.upgrades.cooldown * 0.01);
         if (state.ult.charge >= 100) { state.ult.charge = 100; state.ult.ready = true; createPopup("ULTIMATE READY!", state.player.x, state.player.y - 50, '#ff0099'); updateUltBtn(); }
@@ -2158,6 +2224,7 @@ function updateWeapons() {
 function getNearestEnemy() {
     let near = null, minDist = 9999;
     for(const e of state.enemies) {
+        if(e.dead) continue;
         const d = Math.hypot(e.x - state.player.x, e.y - state.player.y);
         if(d < minDist) { minDist = d; near = e; }
     }
@@ -2367,7 +2434,7 @@ function selectUpgrade(u) {
 
     document.getElementById('upgrade-screen').classList.add('hidden');
     state.paused = false;
-    save(); // Save after choice
+    save(); // Save progress
 }
 
 // Meta Upgrades (Reroll/Skip)
