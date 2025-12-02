@@ -777,7 +777,7 @@ const DEFAULT_DATA = {
 let saveData = loadData();
 
 function loadData() {
-    const d = localStorage.getItem('ifko_evo_v17');
+    const d = localStorage.getItem('ifko_evo_v18');
     if(!d) return JSON.parse(JSON.stringify(DEFAULT_DATA));
     const parsed = JSON.parse(d);
     const newData = JSON.parse(JSON.stringify(DEFAULT_DATA));
@@ -792,7 +792,7 @@ function loadData() {
 }
 
 function save() {
-    localStorage.setItem('ifko_evo_v17', JSON.stringify(saveData));
+    localStorage.setItem('ifko_evo_v18', JSON.stringify(saveData));
 }
 
 // Robust Save Handlers
@@ -1111,7 +1111,10 @@ class Enemy {
         this.flashTime = 0;
         this.dead = false; // Add dead flag for safe removal
         
-        let scaler = 1 + (state.time / 180);
+        let scaler = 1 + (state.time / 180); // Base Scaling
+        // INCREASE DIFFICULTY SCALING
+        scaler *= 1 + (state.time / 3600); // Ramps up harder over time
+
         if (state.isVoidMode) scaler *= 2; 
 
         // Apply Golden Skull difficulty
@@ -1133,9 +1136,9 @@ class Enemy {
         
         if (state.isVoidMode) { this.dmg *= 1.5; this.speed *= 1.2; }
         if (state.isHellMode) {
-            this.hp *= 20; 
+            this.hp *= 50; // Insane HP Buff for Hell Mode
             this.dmg = 9999; // One shot
-            this.speed *= 1.5;
+            this.speed *= 2.5; // Very fast enemies
             this.color = '#ff0000';
         }
 
@@ -1374,7 +1377,7 @@ class Projectile {
                 const dx = state.player.x - this.x, dy = state.player.y - this.y;
                 const dist = Math.sqrt(dx*dx + dy*dy);
                 const speed = 15 * state.sessionStats.projectileSpeed;
-                this.x += (dx/dist) * speed; this.y += (dy/dist) * speed;
+                this.x += (dx/dist) * speed; this.y += (dy / dist) * speed;
                 this.angle += 0.3;
                 if(dist < 20) return true; // Caught
             }
@@ -1784,11 +1787,12 @@ function update() {
     // Difficulty
     if (state.time % 60 === 0) state.score++;
     
-    // Spawning: Hell mode spawns aggressively from start
-    let spawnRate = Math.max(40, 100 - Math.floor(state.time / 60)); // Slower spawn rate
-    if (state.isHellMode) spawnRate = 20; // Fast spawn rate for Hell Mode
+    // Spawning: 
+    // Normal: Start at 60 (1s), reduce to 10 (0.16s)
+    let spawnRate = Math.max(10, 60 - Math.floor(state.time / 60)); 
+    if (state.isHellMode) spawnRate = 4; // Insane Spawn Rate (15/sec)
 
-    const cap = state.isHellMode ? 300 : 100;
+    const cap = state.isHellMode ? 1000 : 300; // Increased Cap
 
     if (state.time % spawnRate === 0 && state.enemies.length < cap) spawnEnemy(); 
 
@@ -1936,7 +1940,6 @@ function spawnEnemy() {
     const ex = state.player.x + Math.cos(angle) * r;
     const ey = state.player.y + Math.sin(angle) * r;
     
-    // Removed Fast/Annoying Mobs: RHOMBUS, VOLATILE, DASHER
     const types = ['SQUARE', 'TRIANGLE', 'PENTAGON', 'SHOOTER', 'TANK', 'SPLITTER'];
     let type = types[Math.min(types.length-1, Math.floor(state.time / 1200))]; 
     if (Math.random() < 0.2) type = types[Math.floor(Math.random() * Math.min(types.length, 5 + state.level/5))];
