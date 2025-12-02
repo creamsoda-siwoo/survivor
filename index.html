@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -486,7 +487,7 @@
         <div id="shop-screen" class="ui-layer hidden interactive menu-screen">
             <div class="currency-display">🪙 <span id="shop-currency">0</span></div>
             <h1 class="screen-title">LABORATORY</h1>
-            <p class="screen-subtitle">기본 능력치 영구 강화</p>
+            <p class="screen-subtitle">기본 능력치 영구 강화 (비용 인하!)</p>
             <div class="list-layout" id="shop-container"></div>
             <button class="btn btn-secondary" style="margin-top:20px;" onclick="closeShop()">뒤로가기</button>
         </div>
@@ -495,7 +496,7 @@
         <div id="armory-screen" class="ui-layer hidden interactive menu-screen">
             <div class="currency-display">🪙 <span id="armory-currency">0</span></div>
             <h1 class="screen-title">ARMORY</h1>
-            <p class="screen-subtitle">전투 장비 업그레이드</p>
+            <p class="screen-subtitle">전투 장비 업그레이드 (특가!)</p>
             <div class="card-container" id="armory-container"></div>
             <button class="btn btn-secondary" style="margin-top:20px;" onclick="closeArmory()">뒤로가기</button>
         </div>
@@ -628,17 +629,17 @@ const CANVAS_H = window.innerHeight;
 let ZOOM = 0.75; 
 const BOSS_SPAWN_TIME = 60; 
 const BOSS_RESPAWN_DELAY = 60 * 60; 
-const SHOP_BASE_COST = 50;
+const SHOP_BASE_COST = 20; // Reduced Cost
 const GACHA_COST = 300;
 const SKIN_COST = 1000;
 
 // --- Definitions ---
 const CLASSES = [
     { id: 'soldier', name: '솔저', desc: '균형 잡힌 전투 요원', stats: { hp: 0, dmg: 0, spd: 0, cd: 0 }, cost: 0, icon: '🪖' },
-    { id: 'guardian', name: '가디언', desc: '체력 +50, 이동속도 -10%', stats: { hp: 50, dmg: 0, spd: -0.5, cd: 0 }, cost: 1000, icon: '🛡️' },
-    { id: 'assassin', name: '어쌔신', desc: '공격력 +30%, 체력 -30', stats: { hp: -30, dmg: 0.3, spd: 1.0, cd: 0 }, cost: 2000, icon: '🗡️' },
-    { id: 'mage', name: '아크메이지', desc: '쿨타임 -10%, 체력 -20', stats: { hp: -20, dmg: 0.1, spd: 0, cd: 0.1 }, cost: 3000, icon: '🔮' },
-    { id: 'engineer', name: '엔지니어', desc: '지속시간 +20%, 크기 +10%', stats: { hp: 10, dmg: 0, spd: 0, cd: 0 }, cost: 4000, icon: '🔧' }
+    { id: 'guardian', name: '가디언', desc: '체력 +50, 이동속도 -10%', stats: { hp: 50, dmg: 0, spd: -0.5, cd: 0 }, cost: 500, icon: '🛡️' },
+    { id: 'assassin', name: '어쌔신', desc: '공격력 +30%, 체력 -30', stats: { hp: -30, dmg: 0.3, spd: 1.0, cd: 0 }, cost: 1000, icon: '🗡️' },
+    { id: 'mage', name: '아크메이지', desc: '쿨타임 -10%, 체력 -20', stats: { hp: -20, dmg: 0.1, spd: 0, cd: 0.1 }, cost: 1500, icon: '🔮' },
+    { id: 'engineer', name: '엔지니어', desc: '지속시간 +20%, 크기 +10%', stats: { hp: 10, dmg: 0, spd: 0, cd: 0 }, cost: 2000, icon: '🔧' }
 ];
 
 const ULTIMATES = [
@@ -705,10 +706,13 @@ const UPGRADES = [
     { id: 'acid', name: '산성 플라스크', desc: '지속 피해를 주는 장판', type: 'WEAPON', icon: '🧪' },
     { id: 'meteor', name: '메테오 셉터', desc: '무작위 위치에 운석 낙하', type: 'WEAPON', icon: '☄️' },
     { id: 'poison', name: '베놈 트레일', desc: '이동 경로에 독가스 살포', type: 'WEAPON', icon: '☠️' },
-
-    // New Weapons
     { id: 'scythe', name: '사슬 낫', desc: '주변을 회전하며 적을 벱니다', type: 'WEAPON', icon: '⛓️' },
     { id: 'grenade', name: '플라즈마 수류탄', desc: '곡사로 날아가 폭발합니다', type: 'WEAPON', icon: '💣' },
+
+    // New Weapons
+    { id: 'shuriken', name: '쉐도우 수리검', desc: '적을 관통하고 튕기는 표창', type: 'WEAPON', icon: '🌀' },
+    { id: 'turret', name: '센트리 터렛', desc: '고정형 자동 포탑 설치', type: 'WEAPON', icon: '🤖' },
+    { id: 'shock', name: '스태틱 쇼크', desc: '주기적인 전기 파동 방출', type: 'WEAPON', icon: '⚡' },
 
     // Hidden
     { id: 'singularity', name: '특이점', desc: '[히든] 적을 소멸시키는 블랙홀', type: 'HIDDEN', icon: '⚫', weight: 0.01 },
@@ -728,8 +732,6 @@ const UPGRADES = [
     { id: 'greed', name: '채굴자', desc: '골드 획득 +20%', type: 'STAT', icon: '💰' },
     { id: 'growth', name: '성장', desc: '최대체력 +5%', type: 'STAT', icon: '🌲' },
     { id: 'haste', name: '헤이스트', desc: '공속 및 이속 +10%', type: 'STAT', icon: '⚡' },
-    
-    // New Upgrades
     { id: 'overclock', name: '오버클럭', desc: '공격 속도 +10%', type: 'STAT', icon: '⚙️' },
     { id: 'titanium', name: '티타늄 합금', desc: '받는 피해 -5%', type: 'STAT', icon: '🔩' }
 ];
@@ -777,7 +779,7 @@ const DEFAULT_DATA = {
 let saveData = loadData();
 
 function loadData() {
-    const d = localStorage.getItem('ifko_evo_v18');
+    const d = localStorage.getItem('ifko_evo_v18_easy');
     if(!d) return JSON.parse(JSON.stringify(DEFAULT_DATA));
     const parsed = JSON.parse(d);
     const newData = JSON.parse(JSON.stringify(DEFAULT_DATA));
@@ -792,7 +794,7 @@ function loadData() {
 }
 
 function save() {
-    localStorage.setItem('ifko_evo_v18', JSON.stringify(saveData));
+    localStorage.setItem('ifko_evo_v18_easy', JSON.stringify(saveData));
 }
 
 // Robust Save Handlers
@@ -825,7 +827,7 @@ const state = {
     lastTap: 0,
     player: null, enemies: [], particles: [], items: [], projectiles: [], 
     boss: null, bossRespawnTimer: 0, bossLevel: 1,
-    popups: [], shockwaves: [], gravityWells: [], mines: [], drones: [], voidZones: [], ionBeams: [], worms: [], spikeBalls: [], acidPools: [], gasClouds: [],
+    popups: [], shockwaves: [], gravityWells: [], mines: [], drones: [], turrets: [], voidZones: [], ionBeams: [], worms: [], spikeBalls: [], acidPools: [], gasClouds: [],
     event: { type: null, timer: 0 },
     stars: [],
     weapons: {},
@@ -1111,10 +1113,8 @@ class Enemy {
         this.flashTime = 0;
         this.dead = false; // Add dead flag for safe removal
         
-        let scaler = 1 + (state.time / 180); // Base Scaling
-        // INCREASE DIFFICULTY SCALING
-        scaler *= 1 + (state.time / 3600); // Ramps up harder over time
-
+        let scaler = 1 + (state.time / 300); // Eased Scaling (was 180)
+        
         if (state.isVoidMode) scaler *= 2; 
 
         // Apply Golden Skull difficulty
@@ -1122,17 +1122,18 @@ class Enemy {
              scaler *= 1.3;
         }
 
-        if (type === 'SQUARE') { this.hp = 10*scaler; this.speed = 1.5; this.size = 15; this.color = '#ff3333'; this.dmg = 10; }
-        else if (type === 'TRIANGLE') { this.hp = 5*scaler; this.speed = 2.5; this.size = 12; this.color = '#ffcc00'; this.dmg = 15; }
-        else if (type === 'PENTAGON') { this.hp = 20*scaler; this.speed = 1.0; this.size = 20; this.color = '#33ff33'; this.dmg = 20; }
-        else if (type === 'OCTAGON') { this.hp = 80*scaler; this.speed = 0.8; this.size = 30; this.color = '#9900ff'; this.dmg = 30; }
-        else if (type === 'SHOOTER') { this.hp = 15*scaler; this.speed = 1.2; this.size = 18; this.color = '#ff5500'; this.dmg = 15; }
-        else if (type === 'SWARM') { this.hp = 2*scaler; this.speed = 3.0; this.size = 8; this.color = '#bc13fe'; this.dmg = 5; }
-        else if (type === 'WORM_HEAD') { this.hp = 150*scaler; this.speed = 2.0; this.size = 20; this.color = '#8800ff'; this.dmg = 20; }
-        else if (type === 'WORM_BODY') { this.hp = 500*scaler; this.speed = 2.0; this.size = 18; this.color = '#6600cc'; this.dmg = 10; }
-        else if (type === 'TANK') { this.hp = 100*scaler; this.speed = 0.6; this.size = 35; this.color = '#444'; this.dmg = 30; }
-        else if (type === 'SPLITTER') { this.hp = 40*scaler; this.speed = 1.0; this.size = 22; this.color = '#00ff99'; this.dmg = 20; }
-        else if (type === 'SPLIT_MINI') { this.hp = 15*scaler; this.speed = 2.0; this.size = 12; this.color = '#00ff99'; this.dmg = 10; }
+        // Lower Base Stats
+        if (type === 'SQUARE') { this.hp = 8*scaler; this.speed = 1.3; this.size = 15; this.color = '#ff3333'; this.dmg = 8; }
+        else if (type === 'TRIANGLE') { this.hp = 4*scaler; this.speed = 2.2; this.size = 12; this.color = '#ffcc00'; this.dmg = 12; }
+        else if (type === 'PENTAGON') { this.hp = 15*scaler; this.speed = 0.9; this.size = 20; this.color = '#33ff33'; this.dmg = 15; }
+        else if (type === 'OCTAGON') { this.hp = 60*scaler; this.speed = 0.7; this.size = 30; this.color = '#9900ff'; this.dmg = 25; }
+        else if (type === 'SHOOTER') { this.hp = 12*scaler; this.speed = 1.0; this.size = 18; this.color = '#ff5500'; this.dmg = 12; }
+        else if (type === 'SWARM') { this.hp = 1*scaler; this.speed = 2.5; this.size = 8; this.color = '#bc13fe'; this.dmg = 3; }
+        else if (type === 'WORM_HEAD') { this.hp = 100*scaler; this.speed = 1.8; this.size = 20; this.color = '#8800ff'; this.dmg = 15; }
+        else if (type === 'WORM_BODY') { this.hp = 300*scaler; this.speed = 1.8; this.size = 18; this.color = '#6600cc'; this.dmg = 8; }
+        else if (type === 'TANK') { this.hp = 80*scaler; this.speed = 0.5; this.size = 35; this.color = '#444'; this.dmg = 20; }
+        else if (type === 'SPLITTER') { this.hp = 30*scaler; this.speed = 0.8; this.size = 22; this.color = '#00ff99'; this.dmg = 15; }
+        else if (type === 'SPLIT_MINI') { this.hp = 10*scaler; this.speed = 1.5; this.size = 12; this.color = '#00ff99'; this.dmg = 8; }
         
         if (state.isVoidMode) { this.dmg *= 1.5; this.speed *= 1.2; }
         if (state.isHellMode) {
@@ -1227,14 +1228,15 @@ class Enemy {
             createPopup("ELITE KILLED", this.x, this.y - 30, '#ffd700');
         }
 
-        if (rand < 0.005 * (1+luck*0.2)) state.items.push(new Item(this.x, this.y, 0, 'BOMB'));
-        else if (rand < 0.01 * (1+luck*0.2)) state.items.push(new Item(this.x, this.y, 0, 'MAGNET'));
-        else if (rand < 0.02 * (1+luck*0.2) && !state.isHellMode) state.items.push(new Item(this.x, this.y, 0, 'HEAL'));
+        // Increased Drop Rates
+        if (rand < 0.01 * (1+luck*0.2)) state.items.push(new Item(this.x, this.y, 0, 'BOMB'));
+        else if (rand < 0.02 * (1+luck*0.2)) state.items.push(new Item(this.x, this.y, 0, 'MAGNET'));
+        else if (rand < 0.04 * (1+luck*0.2) && !state.isHellMode) state.items.push(new Item(this.x, this.y, 0, 'HEAL'));
         else {
              // Always drop XP gem
              let xpVal = 2 * (state.isVoidMode?2:1);
              if (state.isHellMode) xpVal *= 5; // Hell mode xp bonus
-             state.items.push(new Item(this.x, this.y, xpVal, 'XP'));
+             state.items.push(it = new Item(this.x, this.y, xpVal, 'XP'));
              
              // If Gold Rush or Chance, ALSO drop Coin
              if (isGoldRush || rand < (state.isVoidMode ? 0.2 : 0.1) * (1+luck*0.1) || state.isHellMode) {
@@ -1273,8 +1275,8 @@ class Enemy {
 class Boss extends Enemy {
     constructor(x, y) { 
         super('OCTAGON', x, y); 
-        this.hp = 5000 * (1 + state.time/300) * state.bossLevel * (state.isVoidMode?2:1) * (state.isHellMode?20:1); 
-        this.maxHp = this.hp; this.size = 60; this.speed = 1.2; this.color = '#bc13fe'; 
+        this.hp = 3000 * (1 + state.time/300) * state.bossLevel * (state.isVoidMode?2:1) * (state.isHellMode?20:1); 
+        this.maxHp = this.hp; this.size = 60; this.speed = 1.0; this.color = '#bc13fe'; 
     }
     die() { 
         this.dead = true;
@@ -1353,12 +1355,34 @@ class Item {
     }
 }
 
+class Turret {
+    constructor(x, y, lvl) {
+        this.x = x; this.y = y; this.lvl = lvl;
+        this.timer = 0;
+    }
+    update() {
+        this.timer++;
+        if (this.timer > Math.max(10, 60 - this.lvl * 5)) {
+            this.timer = 0;
+            let target = getNearestEnemy(this.x, this.y);
+            if(target) {
+                const angle = Math.atan2(target.y - this.y, target.x - this.x);
+                state.projectiles.push(new Projectile(this.x, this.y, Math.cos(angle)*10, Math.sin(angle)*10, 10 * this.lvl, '#fff', 60, 4, 'bullet'));
+            }
+        }
+    }
+    draw(ctx) {
+        ctx.fillStyle = '#444'; ctx.fillRect(this.x-10, this.y-10, 20, 20);
+        ctx.fillStyle = '#0f0'; ctx.beginPath(); ctx.arc(this.x, this.y, 8, 0, Math.PI*2); ctx.fill();
+    }
+}
+
 class Projectile {
     constructor(x, y, vx, vy, dmg, color, duration, size=4, type='bullet', knockback=2) { 
         this.x = x; this.y = y; this.vx = vx; this.vy = vy; this.dmg = dmg; this.color = color; 
         this.duration = duration * (1 + (saveData.upgrades.duration || 0) * 0.1) * state.sessionStats.durationMult; 
         this.size = size * state.sessionStats.sizeMult * state.sessionStats.areaMult; 
-        this.type = type; // bullet, missile, slash, laser, enemy_bullet, boomerang, arrow, scythe, grenade
+        this.type = type; // bullet, missile, slash, laser, enemy_bullet, boomerang, arrow, scythe, grenade, shuriken
         this.hitList = []; this.knockback = knockback;
         this.angle = Math.atan2(vy, vx);
         this.returning = false; // For boomerang
@@ -1411,6 +1435,11 @@ class Projectile {
             return false;
         }
 
+        if (this.type === 'shuriken') {
+            this.angle += 0.5; // Spin
+            // Bounce logic handled in collision
+        }
+
         this.x += this.vx; this.y += this.vy; this.duration--; 
         if(this.type === 'missile' || this.type === 'nuke') {
             if(state.time % 2 === 0) state.particles.push(new Particle(this.x, this.y, '#555', 0, 5, 2)); // Reduced smoke
@@ -1431,7 +1460,7 @@ class Projectile {
             ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.angle);
             ctx.beginPath(); ctx.moveTo(10, 0); ctx.lineTo(-10, 5); ctx.lineTo(-10, -5); ctx.fill();
             ctx.restore();
-        } else if (this.type === 'boomerang') {
+        } else if (this.type === 'boomerang' || this.type === 'shuriken') {
              ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.angle);
              ctx.beginPath(); ctx.rect(-10, -3, 20, 6); ctx.fill();
              ctx.beginPath(); ctx.rect(-3, -10, 6, 20); ctx.fill();
@@ -1738,7 +1767,7 @@ function startGame(startWeaponId) {
     
     // Reset state arrays
     state.enemies = []; state.particles = []; state.items = []; state.projectiles = [];
-    state.popups = []; state.shockwaves = []; state.mines = []; state.drones = []; state.voidZones = []; state.ionBeams = []; state.worms = []; state.spikeBalls = []; state.acidPools = []; state.gasClouds = [];
+    state.popups = []; state.shockwaves = []; state.mines = []; state.drones = []; state.turrets = []; state.voidZones = []; state.ionBeams = []; state.worms = []; state.spikeBalls = []; state.acidPools = []; state.gasClouds = [];
     
     // Reset Session Stats
     state.sessionStats = { sizeMult: 1, projectileCount: 0, projectileSpeed: 1, areaMult: 1, durationMult: 1, knockbackMult: 1, dashCdMult: 1, pickupRangeMult: 1, armor: 0, greedMult: 1, growth: 0, dmgReducPct: 0 };
@@ -1754,7 +1783,7 @@ function startGame(startWeaponId) {
     addWeapon(startWeaponId);
     
     // Initial Spawn
-    for(let i=0; i<5; i++) spawnEnemy();
+    for(let i=0; i<3; i++) spawnEnemy();
     initStars();
     
     startLoop();
@@ -1787,12 +1816,11 @@ function update() {
     // Difficulty
     if (state.time % 60 === 0) state.score++;
     
-    // Spawning: 
-    // Normal: Start at 60 (1s), reduce to 10 (0.16s)
-    let spawnRate = Math.max(10, 60 - Math.floor(state.time / 60)); 
-    if (state.isHellMode) spawnRate = 4; // Insane Spawn Rate (15/sec)
+    // Spawning: Lower difficulty
+    let spawnRate = Math.max(20, 80 - Math.floor(state.time / 60)); // Slower spawning
+    if (state.isHellMode) spawnRate = 4;
 
-    const cap = state.isHellMode ? 1000 : 300; // Increased Cap
+    const cap = state.isHellMode ? 1000 : 80; // Reduced cap from 100/300
 
     if (state.time % spawnRate === 0 && state.enemies.length < cap) spawnEnemy(); 
 
@@ -1873,22 +1901,33 @@ function update() {
             
             if (Math.hypot(e.x - p.x, e.y - p.y) < e.size + p.size) {
                 if (!p.hitList.includes(e)) {
-                    // Check if bullet type is enemy_bullet or player bullet
                     if (p.type === 'enemy_bullet') {
-                         if (!p.hitList.includes(state.player)) { // Logic for player hit? 
-                             // Usually enemy bullets collide with player, not enemies. 
-                             // But this loop iterates enemies. 
-                             // Enemy bullet collision with Player is handled in Player.update via separate check?
-                             // No, current logic only checks projectile vs enemies.
-                             // Enemy bullet hitting player logic:
+                         if (!p.hitList.includes(state.player)) { 
+                             // Logic handled in Player update mostly, or here.
+                             // Enemy bullets don't hit enemies.
                          }
                     } else {
                         // Player projectile hitting enemy
                         if (e.takeDamage(p.dmg, p.knockback, state.player.x, state.player.y)) {
-                            // Enemy died inside takeDamage
+                            // Enemy died
                         }
-                        if (p.type !== 'scythe') p.hitList.push(e); 
-                        else { if(state.time%10===0) e.takeDamage(p.dmg*0.5); }
+                        if (p.type !== 'scythe' && p.type !== 'shuriken') p.hitList.push(e); 
+                        else { 
+                            if(p.type === 'scythe' && state.time%10===0) e.takeDamage(p.dmg*0.5); 
+                            if(p.type === 'shuriken') {
+                                // Bounce logic
+                                p.hitList.push(e);
+                                let nextT = getNearestEnemy(p.x, p.y, p.hitList);
+                                if (nextT) {
+                                    const ang = Math.atan2(nextT.y-p.y, nextT.x-p.x);
+                                    p.vx = Math.cos(ang) * 12; p.vy = Math.sin(ang) * 12;
+                                    p.duration += 10;
+                                } else {
+                                    // Reflect random
+                                    p.vx = -p.vx; p.vy = -p.vy;
+                                }
+                            }
+                        }
 
                         if (p.type === 'bullet' || p.type === 'arrow' || p.type === 'grenade') hit = true;
                         if (state.weapons.frost) { e.frozen = 60 * state.sessionStats.durationMult; }
@@ -1918,6 +1957,7 @@ function update() {
     state.singularity && state.singularity.update() && (state.singularity = null);
     
     state.drones.forEach(d => d.update());
+    state.turrets.forEach(t => t.update());
     state.spikeBalls.forEach(s => s.update(state.sessionStats.projectileSpeed, state.sessionStats.areaMult));
 
     updateWeapons();
@@ -1989,20 +2029,20 @@ function addWeapon(id) {
         if (id === 'mines') state.mines.push(new Mine(state.player.x, state.player.y, 10, 50));
         if (id === 'drone') state.drones.push(new Drone(state.player, 0));
         if (id === 'spikedball') state.spikeBalls.push(new SpikeBall(state.player));
+        if (id === 'turret') state.turrets.push(new Turret(state.player.x, state.player.y, 1));
     } else {
         state.weapons[id].level++;
         if (state.weapons[id].level === 5) checkEvolution(id);
         if (id === 'drone') state.drones.push(new Drone(state.player, (state.weapons[id].level-1) * (Math.PI/3)));
         if (id === 'spikedball') state.spikeBalls.push(new SpikeBall(state.player));
+        if (id === 'turret') state.turrets.push(new Turret(state.player.x + (Math.random()-0.5)*100, state.player.y + (Math.random()-0.5)*100, state.weapons[id].level));
     }
 }
 
 function checkEvolution(wid) {
     const evo = EVOLUTIONS.find(e => e.weapon === wid);
     if (evo) {
-        // Just need to have the passive, level doesn't matter for simplicity or max level
-        const hasPassive = Object.keys(state.weapons).includes(evo.passive) || (UPGRADES.find(u=>u.id===evo.passive).type==='STAT' && saveData.upgrades[evo.passive] > 0);
-        // Evolution happens next level up or immediately? Let's make it a chance in level up
+        // Evolution logic
     }
 }
 
@@ -2057,12 +2097,9 @@ function updateWeapons() {
             const angle = w.timer + (i * (Math.PI*2/count));
             const ox = p.x + Math.cos(angle) * r;
             const oy = p.y + Math.sin(angle) * r;
-            // Projectile visual only, damage logic via proximity
             state.enemies.forEach(e => {
                 if(Math.hypot(e.x - ox, e.y - oy) < 20 * sizeMult) e.takeDamage(10 * w.level, 1, p.x, p.y);
             });
-            // Draw handled in draw() loop or push temp projectiles?
-            // Actually let's just push a short lived projectile every frame for visual or draw manually
              state.particles.push(new Particle(ox, oy, w.evolved?'#000':'#00ccff', 0, 5, 2));
         }
     }
@@ -2135,13 +2172,8 @@ function updateWeapons() {
             w.timer = 0;
             let target = getNearestEnemy();
             const angle = target ? Math.atan2(target.y-p.y, target.x-p.x) : (state.facingRight?0:Math.PI);
-            // Instant hit line
             createExplosion(p.x + Math.cos(angle)*300, p.y + Math.sin(angle)*300, '#00ffff', 5);
-            // Visual line
             state.projectiles.push(new Projectile(p.x, p.y, Math.cos(angle)*30, Math.sin(angle)*30, 60*w.level, '#00ffff', 5, 2*sizeMult, 'laser')); 
-            // Hit logic handled by projectile update usually, but for instant hit:
-            // Just simulate a super fast projectile or raycast logic here
-            // For simplicity, spawn a fast invisible projectile
         }
     }
 
@@ -2177,7 +2209,6 @@ function updateWeapons() {
         w.timer++;
         if (w.timer > 180 * (1 - p.cdReduc)) {
             w.timer = 0;
-            // Throw nearby
             const ax = p.x + (Math.random()-0.5)*200;
             const ay = p.y + (Math.random()-0.5)*200;
             state.acidPools.push(new AcidPool(ax, ay, 300, 40*sizeMult, 5*w.level));
@@ -2193,7 +2224,6 @@ function updateWeapons() {
             w.timer = 0;
             const mx = p.x + (Math.random()-0.5)*400;
             const my = p.y + (Math.random()-0.5)*400;
-            // Immediate impact
             createExplosion(mx, my, '#ff4400', 10, 5*sizeMult);
             state.shockwaves.push(new Shockwave(mx, my, 80*stats.areaMult*sizeMult, '#ff4400'));
             state.enemies.forEach(e => {
@@ -2212,13 +2242,10 @@ function updateWeapons() {
         }
     }
 
-    // Chain Scythe (New)
+    // Chain Scythe
     if (state.weapons.scythe) {
         const w = state.weapons.scythe;
-        // Logic handled in projectile update (creates persistent projectile logic or checks hit here)
-        // Let's use persistent projectile approach
         if (w.timer === 0) {
-            // Spawn scythes
             const count = 1 + stats.projectileCount;
             for(let i=0; i<count; i++) {
                 const proj = new Projectile(p.x, p.y, 0, 0, 15*w.level, '#eee', 999999, 10*sizeMult, 'scythe');
@@ -2227,16 +2254,13 @@ function updateWeapons() {
             }
             w.timer = 1; 
         }
-        // Keep projectile alive? Actually, better to re-spawn them or update existing.
-        // Simplified: Re-spawn scythes every frame is bad.
-        // Check if scythe projectiles exist?
         const scythes = state.projectiles.filter(proj => proj.type === 'scythe');
         if (scythes.length < 1 + stats.projectileCount) {
              state.projectiles.push(new Projectile(p.x, p.y, 0, 0, 15*w.level, '#eee', 10, 10*sizeMult, 'scythe'));
         }
     }
 
-    // Grenade (New)
+    // Grenade
     if (state.weapons.grenade) {
         const w = state.weapons.grenade;
         w.timer++;
@@ -2251,6 +2275,36 @@ function updateWeapons() {
         }
     }
 
+    // Shuriken (New)
+    if (state.weapons.shuriken) {
+        const w = state.weapons.shuriken;
+        w.timer++;
+        if(w.timer > 40 * (1 - p.cdReduc)) {
+             w.timer = 0;
+             let target = getNearestEnemy();
+             const angle = target ? Math.atan2(target.y-p.y, target.x-p.x) : (state.facingRight?0:Math.PI);
+             const vx = Math.cos(angle) * 12 * speedMult;
+             const vy = Math.sin(angle) * 12 * speedMult;
+             state.projectiles.push(new Projectile(p.x, p.y, vx, vy, 12*w.level, '#8800ff', 60, 6*sizeMult, 'shuriken'));
+        }
+    }
+
+    // Shock (New)
+    if (state.weapons.shock) {
+         const w = state.weapons.shock;
+         w.timer++;
+         if(w.timer > 90 * (1 - p.cdReduc)) {
+             w.timer = 0;
+             createExplosion(p.x, p.y, '#00ffff', 10);
+             state.shockwaves.push(new Shockwave(p.x, p.y, 120*stats.areaMult*sizeMult, '#00ffff'));
+             state.enemies.forEach(e => {
+                 if(Math.hypot(e.x - p.x, e.y - p.y) < 120*stats.areaMult*sizeMult) {
+                     e.takeDamage(30 * w.level, 10, p.x, p.y); // High knockback
+                 }
+             });
+         }
+    }
+
     // Singularity (Hidden)
     if (state.weapons.singularity) {
          const w = state.weapons.singularity;
@@ -2262,11 +2316,11 @@ function updateWeapons() {
     }
 }
 
-function getNearestEnemy() {
+function getNearestEnemy(x=state.player.x, y=state.player.y, excludeList=[]) {
     let near = null, minDist = 9999;
     for(const e of state.enemies) {
-        if(e.dead) continue;
-        const d = Math.hypot(e.x - state.player.x, e.y - state.player.y);
+        if(e.dead || excludeList.includes(e)) continue;
+        const d = Math.hypot(e.x - x, e.y - y);
         if(d < minDist) { minDist = d; near = e; }
     }
     return near;
@@ -2317,6 +2371,7 @@ function draw() {
     state.gasClouds.forEach(g => g.draw(ctx));
     
     state.mines.forEach(m => m.draw(ctx));
+    state.turrets.forEach(t => t.draw(ctx));
     state.ionBeams.forEach(i => i.draw(ctx));
     state.singularity && state.singularity.draw(ctx);
     state.items.forEach(i => i.draw(ctx));
@@ -2415,14 +2470,20 @@ function generateUpgradeCards() {
     const choices = [];
     for(let i=0; i<3; i++) {
         if(pool.length === 0) break;
-        const idx = Math.floor(Math.random() * pool.length);
-        choices.push(pool[idx]);
-        pool.splice(idx, 1);
+        // Prioritize weapons slightly
+        let weaponWeight = 0.6; 
+        const weaponPool = pool.filter(u => u.type === 'WEAPON');
+        if(weaponPool.length > 0 && Math.random() < weaponWeight) {
+             const idx = Math.floor(Math.random() * weaponPool.length);
+             choices.push(weaponPool[idx]);
+             pool.splice(pool.indexOf(weaponPool[idx]), 1);
+        } else {
+             const idx = Math.floor(Math.random() * pool.length);
+             choices.push(pool[idx]);
+             pool.splice(idx, 1);
+        }
     }
     
-    // Evolution check (Guaranteed if applicable)
-    // For simplicity, just mixing them in
-
     if(choices.length === 0) { // All maxed
         choices.push({id:'heal', name:'풀 회복', desc:'체력 모두 회복', icon:'💖'});
         choices.push({id:'money', name:'돈다발', desc:'코인 500개', icon:'💰'});
@@ -2739,7 +2800,7 @@ function renderArmory() {
 
     items.forEach(i => {
         const lvl = saveData.equipment[i.id] || 0;
-        const cost = Math.floor(200 * Math.pow(1.2, lvl));
+        const cost = Math.floor(50 * Math.pow(1.1, lvl)); // Reduced cost
         
         const d = document.createElement('div');
         d.className = 'card';
