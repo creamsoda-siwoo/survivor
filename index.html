@@ -14,6 +14,7 @@
             --accent-dark: #cc0077;
             --gold: #ffd700;
             --void: #9d00ff;
+            --hell: #ff0000;
             --bg: #050508;
             --glass: rgba(20, 20, 30, 0.9);
             --border: rgba(255, 255, 255, 0.15);
@@ -24,6 +25,13 @@
             --primary: #bc13fe;
             --primary-dark: #8a0bbd;
             --bg: #1a0524;
+        }
+
+        body.hell-mode {
+            --primary: #ff3333;
+            --primary-dark: #cc0000;
+            --bg: #1a0000;
+            --accent: #ffaa00;
         }
 
         /* Mobile Scroll Fix: Only disable touch action on body/canvas, allow it elsewhere */
@@ -363,13 +371,14 @@
         .meta-btn span { font-weight: bold; color: var(--gold); }
         .meta-btn:disabled { opacity: 0.5; cursor: default; }
 
-        /* Void Mode Toggle */
+        /* Void/Hell Mode Toggle */
         .mode-toggle {
             display: flex; align-items: center; gap: 10px; margin-bottom: 20px; cursor: pointer;
             background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 20px; border: 1px solid var(--border);
-            justify-content: center;
+            justify-content: center; width: 100%;
         }
         .mode-toggle.active { border-color: var(--void); background: rgba(157, 0, 255, 0.1); }
+        .mode-toggle.hell-active { border-color: var(--hell); background: rgba(255, 0, 0, 0.1); }
         .mode-checkbox { width: 20px; height: 20px; accent-color: var(--void); }
 
         /* Weapon Select */
@@ -586,6 +595,11 @@
             <div class="mode-toggle" id="void-mode-toggle" onclick="toggleVoidMode()">
                 <input type="checkbox" class="mode-checkbox" id="void-mode-cb">
                 <span style="font-weight:bold; color:var(--void); text-shadow:0 0 5px var(--void);">VOID MODE (HARD)</span>
+            </div>
+
+            <div class="mode-toggle" id="hell-mode-toggle" onclick="toggleHellMode()">
+                <input type="checkbox" class="mode-checkbox" id="hell-mode-cb" style="accent-color: red;">
+                <span style="font-weight:bold; color:red; text-shadow:0 0 5px red;">HELL MODE (EXPERT)</span>
             </div>
 
             <div style="display:flex; flex-direction:column; gap:15px; width: 200px;">
@@ -822,6 +836,7 @@ const state = {
     },
     meta: { reroll: 0, skip: 0, banish: 0, banishedItems: [] },
     isVoidMode: false,
+    isHellMode: false,
     ult: { ready: true, charge: 100, cd: 0, maxCd: 1800, activeTime: 0 },
     facingRight: true
 };
@@ -895,6 +910,12 @@ class Player {
 
         this.maxHp = (100 + job.stats.hp + shopHp + equipHp) * (1 + shopGrowth);
         this.hp = this.maxHp;
+        
+        if (state.isHellMode) {
+            this.maxHp = 1;
+            this.hp = 1;
+        }
+
         this.baseSpeed = (3 + job.stats.spd + shopSpd + artSpd + equipSpd);
         this.speed = this.baseSpeed;
         this.dmgMult = 1 + job.stats.dmg + shopDmg + artDmg + equipDmg;
@@ -922,7 +943,7 @@ class Player {
     }
 
     update() {
-        if (this.regenRate > 0 && state.time % 60 === 0 && this.hp < this.maxHp) {
+        if (!state.isHellMode && this.regenRate > 0 && state.time % 60 === 0 && this.hp < this.maxHp) {
             this.hp = Math.min(this.hp + this.regenRate, this.maxHp);
             createPopup('+', this.x, this.y - 20, '#0f0');
         }
@@ -1020,7 +1041,9 @@ class Player {
         
         if (this.hp <= 0) {
             if (this.revives > 0) {
-                this.revives--; this.hp = this.maxHp * 0.5; this.invuln = 120;
+                this.revives--; 
+                this.hp = state.isHellMode ? 1 : this.maxHp * 0.5;
+                this.invuln = 120;
                 createExplosion(this.x, this.y, '#fff', 50); createPopup("REVIVE!", this.x, this.y, '#fff');
                 state.enemies.forEach(e => { const dx = e.x - this.x, dy = e.y - this.y; e.pushX = dx * 3; e.pushY = dy * 3; });
             } else endGame();
@@ -1047,6 +1070,7 @@ class Player {
         }
 
         let color = state.isVoidMode ? '#bc13fe' : '#00ffcc';
+        if (state.isHellMode) color = '#ff3333';
         if (state.weapons.blaster && state.weapons.blaster.evolved) color = '#ff0099';
         if (this.invuln > 0 && Math.floor(Date.now()/50)%2===0) color = '#fff';
         if (state.ult.activeTime > 0) color = '#ff3300';
@@ -1108,6 +1132,13 @@ class Enemy {
         else if (type === 'SPLIT_MINI') { this.hp = 15*scaler; this.speed = 2.0; this.size = 12; this.color = '#00ff99'; this.dmg = 10; }
         
         if (state.isVoidMode) { this.dmg *= 1.5; this.speed *= 1.2; }
+        if (state.isHellMode) {
+            this.hp *= 20; 
+            this.dmg = 9999; // One shot
+            this.speed *= 1.5;
+            this.color = '#ff0000';
+        }
+
         if (this.isElite) {
             this.hp *= 5; this.size *= 1.5; this.dmg *= 2; 
         }
@@ -1137,7 +1168,7 @@ class Enemy {
             this.shootTimer++;
             if (this.shootTimer > 120) {
                 this.shootTimer = 0;
-                state.projectiles.push(new Projectile(this.x, this.y, (dx/dist)*5, (dy/dist)*5, 10 * (state.isVoidMode?1.5:1), '#ff3333', 100, 5, 'enemy_bullet'));
+                state.projectiles.push(new Projectile(this.x, this.y, (dx/dist)*5, (dy/dist)*5, state.isHellMode ? 9999 : 10 * (state.isVoidMode?1.5:1), '#ff3333', 100, 5, 'enemy_bullet'));
             }
         } else if (this.type === 'WORM_HEAD') {
              const angle = Math.atan2(dy, dx);
@@ -1182,7 +1213,7 @@ class Enemy {
             state.enemies.push(new Enemy('SPLIT_MINI', this.x - 10, this.y));
         }
 
-        if(saveData.artifacts.fang && Math.random() < 0.1) { state.player.hp = Math.min(state.player.hp + 1, state.player.maxHp); createPopup("+1", state.player.x, state.player.y, '#0f0'); }
+        if(saveData.artifacts.fang && Math.random() < 0.1 && !state.isHellMode) { state.player.hp = Math.min(state.player.hp + 1, state.player.maxHp); createPopup("+1", state.player.x, state.player.y, '#0f0'); }
         
         const rand = Math.random();
         const luck = saveData.upgrades.luck || 0;
@@ -1195,15 +1226,18 @@ class Enemy {
 
         if (rand < 0.005 * (1+luck*0.2)) state.items.push(new Item(this.x, this.y, 0, 'BOMB'));
         else if (rand < 0.01 * (1+luck*0.2)) state.items.push(new Item(this.x, this.y, 0, 'MAGNET'));
-        else if (rand < 0.02 * (1+luck*0.2)) state.items.push(new Item(this.x, this.y, 0, 'HEAL'));
+        else if (rand < 0.02 * (1+luck*0.2) && !state.isHellMode) state.items.push(new Item(this.x, this.y, 0, 'HEAL'));
         else {
              // Always drop XP gem
-             state.items.push(new Item(this.x, this.y, 2 * (state.isVoidMode?2:1), 'XP'));
+             let xpVal = 2 * (state.isVoidMode?2:1);
+             if (state.isHellMode) xpVal *= 5; // Hell mode xp bonus
+             state.items.push(new Item(this.x, this.y, xpVal, 'XP'));
              
              // If Gold Rush or Chance, ALSO drop Coin
-             if (isGoldRush || rand < (state.isVoidMode ? 0.2 : 0.1) * (1+luck*0.1)) {
+             if (isGoldRush || rand < (state.isVoidMode ? 0.2 : 0.1) * (1+luck*0.1) || state.isHellMode) {
                  let coin = new Item(this.x + (Math.random()-0.5)*20, this.y + (Math.random()-0.5)*20, 300, 'XP'); 
-                 coin.isCoin = true; coin.color = '#ffd700'; coin.val = 500;
+                 coin.isCoin = true; coin.color = '#ffd700'; 
+                 coin.val = state.isHellMode ? 5000 : 500; // Hell Mode Coin Bonus
                  state.items.push(coin);
              }
         }
@@ -1236,7 +1270,7 @@ class Enemy {
 class Boss extends Enemy {
     constructor(x, y) { 
         super('OCTAGON', x, y); 
-        this.hp = 5000 * (1 + state.time/300) * state.bossLevel * (state.isVoidMode?2:1); 
+        this.hp = 5000 * (1 + state.time/300) * state.bossLevel * (state.isVoidMode?2:1) * (state.isHellMode?20:1); 
         this.maxHp = this.hp; this.size = 60; this.speed = 1.2; this.color = '#bc13fe'; 
     }
     die() { 
@@ -1245,7 +1279,7 @@ class Boss extends Enemy {
         const coins = state.isVoidMode ? 100 : 50; // Increased drop count
         for(let i=0; i<coins; i++) { 
             let it = new Item(this.x + (Math.random()-0.5)*120, this.y + (Math.random()-0.5)*120, 50, 'XP'); 
-            it.isCoin = true; it.val = 2000; // Increased Boss Coin Value
+            it.isCoin = true; it.val = state.isHellMode ? 20000 : 2000; // Increased Boss Coin Value
             state.items.push(it); 
         } 
         state.boss = null; 
@@ -1281,7 +1315,7 @@ class Item {
             else if (this.type === 'BOMB') { state.enemies.forEach(e => { if(!(e instanceof Boss)) e.die(); else e.takeDamage(500); }); createExplosion(player.x, player.y, '#fff', 20); createPopup("BOOM!", this.x, this.y, '#fa0'); }
             else if (this.type === 'CHEST') {
                  addXp(200); 
-                 const gold = 30000; // Increased Chest value
+                 const gold = state.isHellMode ? 300000 : 30000; // Increased Chest value
                  state.coins += gold; 
                  saveData.coins += gold; // Add to wallet immediately
                  saveData.stats.totalCoins += gold; 
@@ -1750,9 +1784,13 @@ function update() {
     // Difficulty
     if (state.time % 60 === 0) state.score++;
     
-    // Spawning: Reduced cap and slowed rate
-    const spawnRate = Math.max(40, 100 - Math.floor(state.time / 60)); // Slower spawn rate
-    if (state.time % spawnRate === 0 && state.enemies.length < 100) spawnEnemy(); // Cap reduced to 100
+    // Spawning: Hell mode spawns aggressively from start
+    let spawnRate = Math.max(40, 100 - Math.floor(state.time / 60)); // Slower spawn rate
+    if (state.isHellMode) spawnRate = 20; // Fast spawn rate for Hell Mode
+
+    const cap = state.isHellMode ? 300 : 100;
+
+    if (state.time % spawnRate === 0 && state.enemies.length < cap) spawnEnemy(); 
 
     // Boss Spawn
     if (state.time % (BOSS_SPAWN_TIME * 60) === 0 && !state.boss && state.bossRespawnTimer <= 0) {
@@ -2616,8 +2654,12 @@ function showStartScreen() {
     document.querySelectorAll('.ui-layer').forEach(e => e.classList.add('hidden'));
     document.getElementById('start-screen').classList.remove('hidden');
     document.getElementById('joystick-zone').style.display = 'none';
-    document.body.className = ''; // Reset Void Mode visually in menu
     
+    // Clear Mode visuals in menu
+    document.body.className = ''; 
+    if(state.isVoidMode) document.body.classList.add('void-mode');
+    if(state.isHellMode) document.body.classList.add('hell-mode');
+
     // Update currency display
     document.getElementById('start-currency').innerText = saveData.coins;
 }
@@ -2906,15 +2948,33 @@ function closeSettings() { document.getElementById('settings-screen').classList.
 
 function toggleVoidMode() {
     state.isVoidMode = !state.isVoidMode;
+    // Disable Hell Mode if Void Mode is active (Mutually exclusive for simplicity or stack? Let's make exclusive)
+    if(state.isVoidMode) state.isHellMode = false;
     updateVoidToggle();
 }
+
+function toggleHellMode() {
+    state.isHellMode = !state.isHellMode;
+    if(state.isHellMode) state.isVoidMode = false;
+    updateVoidToggle();
+}
+
 function updateVoidToggle() {
     const t = document.getElementById('void-mode-toggle');
     const cb = document.getElementById('void-mode-cb');
+    const ht = document.getElementById('hell-mode-toggle');
+    const hcb = document.getElementById('hell-mode-cb');
+
     if (state.isVoidMode) {
         t.classList.add('active'); cb.checked = true; document.body.classList.add('void-mode');
     } else {
         t.classList.remove('active'); cb.checked = false; document.body.classList.remove('void-mode');
+    }
+
+    if (state.isHellMode) {
+        ht.classList.add('hell-active'); hcb.checked = true; document.body.classList.add('hell-mode');
+    } else {
+        ht.classList.remove('hell-active'); hcb.checked = false; document.body.classList.remove('hell-mode');
     }
 }
 
