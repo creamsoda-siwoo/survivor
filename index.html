@@ -21,20 +21,9 @@
             --font: 'Noto Sans KR', 'Exo 2', sans-serif;
         }
 
-        body.void-mode {
-            --primary: #bc13fe;
-            --primary-dark: #8a0bbd;
-            --bg: #1a0524;
-        }
+        body.void-mode { --primary: #bc13fe; --primary-dark: #8a0bbd; --bg: #1a0524; }
+        body.hell-mode { --primary: #ff3333; --primary-dark: #cc0000; --bg: #1a0000; --accent: #ffaa00; }
 
-        body.hell-mode {
-            --primary: #ff3333;
-            --primary-dark: #cc0000;
-            --bg: #1a0000;
-            --accent: #ffaa00;
-        }
-
-        /* Mobile Scroll Fix */
         * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
         
         body {
@@ -51,7 +40,6 @@
 
         canvas { display: block; width: 100%; height: 100%; cursor: crosshair; touch-action: none; }
 
-        /* Effects */
         .scanlines {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
@@ -67,7 +55,6 @@
             background: #fff; opacity: 0; pointer-events: none; z-index: 50; transition: opacity 0.1s;
         }
 
-        /* UI Layers */
         .ui-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; display: flex; flex-direction: column; z-index: 20;
@@ -75,7 +62,6 @@
         .interactive { pointer-events: auto; }
         .hidden { display: none !important; }
 
-        /* HUD */
         #hud { padding: 15px; justify-content: space-between; height: 100%; z-index: 30; }
         .top-row { display: flex; flex-direction: column; align-items: center; width: 100%; pointer-events: none; }
         
@@ -108,7 +94,6 @@
         }
         #pause-btn:active { transform: scale(0.9); background: rgba(255,255,255,0.1); }
 
-        /* Ultimate Button */
         #ult-btn {
             position: absolute; bottom: 30px; right: 30px;
             width: 90px; height: 90px; border-radius: 50%;
@@ -129,7 +114,6 @@
         #ult-icon { font-size: 2.2rem; }
         #ult-label { font-size: 0.7rem; font-weight: bold; margin-top: -2px; }
 
-        /* Boss HUD */
         #boss-hud {
             position: absolute; top: 100px; left: 50%; transform: translateX(-50%);
             width: 80%; max-width: 500px; opacity: 0; transition: opacity 0.5s;
@@ -140,7 +124,6 @@
         #boss-hp-container { width: 100%; height: 20px; background: rgba(0,0,0,0.8); border: 2px solid #4a0b63; border-radius: 4px; overflow: hidden; }
         #boss-hp-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #9d00ff, #bc13fe); box-shadow: 0 0 10px #9d00ff; }
 
-        /* Event HUD */
         #event-hud {
             position: absolute; top: 150px; width: 100%; text-align: center;
             font-size: 1.5rem; font-weight: 900; color: #ffd700;
@@ -148,7 +131,6 @@
             animation: pulse 1s infinite;
         }
 
-        /* Common Menu Styles */
         .menu-screen {
             background: rgba(8, 8, 12, 0.98);
             justify-content: center; align-items: center; text-align: center;
@@ -164,7 +146,6 @@
         }
         .screen-subtitle { color: #888; margin-bottom: 25px; font-size: 0.9rem; letter-spacing: 1px; }
 
-        /* Buttons */
         .btn {
             padding: 12px 24px; font-size: 1rem;
             background: linear-gradient(135deg, var(--primary-dark), var(--primary));
@@ -190,14 +171,12 @@
         .btn-accent:hover { box-shadow: 0 6px 20px rgba(255, 0, 153, 0.5); }
         .btn-small { padding: 5px 10px; font-size: 0.8rem; min-width: auto; }
 
-        /* Menu Grid */
         .menu-grid {
             display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
             max-width: 500px; width: 100%; margin-bottom: 20px;
         }
         .menu-grid .btn { width: 100%; padding: 10px; font-size: 0.9rem; }
 
-        /* Upgrade Cards */
         .card-container {
             display: flex; gap: 15px; flex-wrap: wrap; justify-content: center;
             padding: 20px; max-height: 70vh; overflow-y: auto; width: 100%;
@@ -232,7 +211,6 @@
 
         .card.locked { opacity: 0.7; filter: grayscale(1); border-style: dashed; }
 
-        /* Lists */
         .list-layout {
             display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
             gap: 12px; width: 100%; max-width: 900px; padding: 10px;
@@ -255,7 +233,6 @@
             padding: 5px 15px; border-radius: 20px; border: 1px solid rgba(255,215,0,0.3);
         }
 
-        /* Skin Grid */
         .skin-grid { 
             display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; max-width: 700px; 
             overflow-y: auto; max-height: 60vh;
@@ -272,7 +249,6 @@
         .skin-name { font-size: 0.85rem; color: #ddd; font-weight: bold; }
         .lock-icon { position: absolute; top: 8px; right: 8px; font-size: 1rem; color: #777; }
 
-        /* Gacha */
         #gacha-result {
             width: 300px; padding: 30px; border: 1px solid var(--gold);
             background: radial-gradient(circle at center, #222, #050505);
@@ -282,7 +258,6 @@
         @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         .gacha-icon { font-size: 6rem; margin-bottom: 20px; filter: drop-shadow(0 0 15px rgba(255,255,255,0.5)); }
 
-        /* Joystick */
         #joystick-zone { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; touch-action: none; }
         #joystick-base {
             position: absolute; width: 120px; height: 120px;
@@ -725,7 +700,29 @@ const UPGRADES = [
     { id: 'turret', name: '센트리 터렛', desc: '자동 포탑 설치', type: 'WEAPON', icon: '📡' },
     { id: 'sonic', name: '소닉 붐', desc: '적을 밀쳐내는 충격파', type: 'WEAPON', icon: '🔊' },
     { id: 'cluster', name: '클러스터 밤', desc: '폭발 후 확산되는 폭탄', type: 'WEAPON', icon: '🧨' },
+    { id: 'inferno', name: '인페르노 월', desc: '지나가는 적을 태우는 불벽', type: 'WEAPON', icon: '🔥' },
+    { id: 'volt', name: '볼트 건', desc: '즉시 적중하는 전기 충격', type: 'WEAPON', icon: '🌩️' },
+    { id: 'disc', name: '에너지 디스크', desc: '화면을 튕겨 다니는 원반', type: 'WEAPON', icon: '💿' },
+    { id: 'rocket', name: '로켓 스웜', desc: '유도 미사일 군단 발사', type: 'WEAPON', icon: '🎆' },
+    { id: 'shards', name: '프로스트 샤드', desc: '전방에 얼음 파편 산탄', type: 'WEAPON', icon: '🧊' },
+    { id: 'dart', name: '포이즌 다트', desc: '치명적인 독침 발사', type: 'WEAPON', icon: '💉' },
+    { id: 'holy', name: '홀리 빔', desc: '회전하는 거대한 성광', type: 'WEAPON', icon: '✝️' },
+    { id: 'void', name: '보이드 리프트', desc: '공허의 틈을 엽니다', type: 'WEAPON', icon: '🕳️' },
+    { id: 'shuriken', name: '수리검 폭풍', desc: '나선형으로 퍼지는 수리검', type: 'WEAPON', icon: '🌀' },
+    { id: 'aura', name: '오라 펄스', desc: '화면 전체 심장 박동 피해', type: 'WEAPON', icon: '💓' },
     
+    // v30.0 New Weapons
+    { id: 'flail', name: '플레일', desc: '플레이어 주위를 도는 철퇴', type: 'WEAPON', icon: '⚒️' },
+    { id: 'tornado', name: '토네이도', desc: '방황하는 회오리바람', type: 'WEAPON', icon: '🌪️' },
+    { id: 'fireworks', name: '폭죽', desc: '하늘로 쏘아올려 폭발', type: 'WEAPON', icon: '🎇' },
+    { id: 'laser_sword', name: '광선검', desc: '전방을 휩쓰는 거대 검', type: 'WEAPON', icon: '🗡️' },
+    { id: 'magma', name: '마그마 구슬', desc: '굴러가며 용암을 남김', type: 'WEAPON', icon: '🌋' },
+    { id: 'static', name: '정전기장', desc: '적을 마비시키는 전기장', type: 'WEAPON', icon: '⚡' },
+    { id: 'drill', name: '드릴 샷', desc: '느리지만 강력한 다단히트', type: 'WEAPON', icon: '🔩' },
+    { id: 'guardian', name: '수호 정령', desc: '주변을 빠르게 도는 정령', type: 'WEAPON', icon: '🧚' },
+    { id: 'ice_spike', name: '얼음 가시', desc: '바닥에서 솟아오르는 가시', type: 'WEAPON', icon: '🏔️' },
+    { id: 'chain_bomb', name: '연쇄 폭탄', desc: '폭발 시 추가 폭탄 생성', type: 'WEAPON', icon: '💣' },
+
     // Infinity Weapons
     { id: 'cosmic', name: '코스믹 레이', desc: '화면을 가로지르는 광선', type: 'WEAPON', icon: '🌠' },
     { id: 'nebula', name: '네뷸라 체인', desc: '무한 연쇄 번개', type: 'WEAPON', icon: '🔗' },
@@ -865,7 +862,6 @@ const state = {
 
 class Merchant {
     constructor() {
-        // Spawn distance from player
         const angle = Math.random() * Math.PI * 2;
         const r = 400;
         this.x = state.player.x + Math.cos(angle) * r;
@@ -879,7 +875,7 @@ class Merchant {
         const dist = Math.hypot(player.x - this.x, player.y - this.y);
         if (dist < 40) {
             openMerchantUI();
-            this.active = false; // Interact once per spawn
+            this.active = false; 
         }
     }
     draw(ctx) {
@@ -889,7 +885,6 @@ class Merchant {
         ctx.fillStyle = '#ffcc00';
         ctx.beginPath(); ctx.arc(0, 0, this.size, 0, Math.PI*2); ctx.fill();
         ctx.fillStyle = '#000'; ctx.fillText("🛒", -8, 5);
-        // Indicator arrow if offscreen? (Simplified)
         ctx.restore();
     }
 }
@@ -925,7 +920,6 @@ class Player {
         
         const job = CLASSES.find(c => c.id === saveData.currentClass) || CLASSES[0];
         
-        // Artifact bonuses
         const artDmg = (saveData.artifacts.cube || 0) * 0.1 + (saveData.artifacts.fusion || 0) * 0.05 + (saveData.artifacts.darkmatter || 0) * 0.05;
         const artSpd = (saveData.artifacts.feather || 0) * 0.05;
         const artCd = (saveData.artifacts.chip || 0) * 0.05 + (saveData.artifacts.drink || 0) * 0.1 + (saveData.artifacts.magic_scroll || 0) * 0.1;
@@ -954,13 +948,12 @@ class Player {
         const shopDmgReduc = (saveData.upgrades.titanium || 0) * 0.05;
         const shopThorns = (saveData.upgrades.thorns || 0) * 0.1;
         const shopBlast = (saveData.upgrades.blast || 0) * 0.1;
-        const shopInterest = (saveData.upgrades.interest || 0) * 0.01; // 1% per level
+        const shopInterest = (saveData.upgrades.interest || 0) * 0.01; 
         const shopRage = (saveData.upgrades.rage || 0) * 0.01;
 
         if (job.id === 'engineer') { state.sessionStats.durationMult += 0.2; state.sessionStats.sizeMult += 0.1; }
         if (job.id === 'gambler') { 
             state.sessionStats.greedMult += 0.5; 
-            // Random stats
             const randHp = (Math.random()-0.5)*50; 
             const randDmg = (Math.random()-0.5)*0.5;
             job.stats.hp += randHp;
@@ -973,7 +966,7 @@ class Player {
         const equipCd = (saveData.equipment.helmet || 0) * 0.01;
         const equipCrit = (saveData.equipment.gloves || 0) * 0.01;
         const equipRing = (saveData.equipment.ring || 0) * 0.05;
-        const equipNeckRevive = (saveData.equipment.necklace || 0) * 0.1; // 10% chance to not consume revive? or just extra revive every 10 levels
+        const equipNeckRevive = (saveData.equipment.necklace || 0) * 0.1; 
         const equipNeckXp = (saveData.equipment.necklace || 0) * 0.05;
 
         this.maxHp = (100 + job.stats.hp + shopHp + equipHp) * (1 + shopGrowth);
@@ -989,7 +982,7 @@ class Player {
         
         let interestBonus = 0;
         if (shopInterest > 0) {
-            interestBonus = Math.min(0.5, (saveData.coins / 1000) * shopInterest); // Cap at 50%
+            interestBonus = Math.min(0.5, (saveData.coins / 1000) * shopInterest); 
         }
 
         this.dmgMult = (1 + job.stats.dmg + shopDmg + artDmg + equipDmg + interestBonus);
@@ -1032,18 +1025,10 @@ class Player {
             createPopup('+', this.x, this.y - 20, '#0f0');
         }
         
-        // Rage mechanic
-        if (this.rageFactor > 0) {
-             const missingHpPct = 1 - (this.hp / this.maxHp);
-             // Dynamic Dmg mult adjust? No, difficult to adjust cleanly. 
-             // We'll apply rage bonus in getDmg() helper or directly modifier
-        }
-
-        // Shield Artifact
         if (saveData.artifacts.shield) {
             this.shieldTimer++;
-            if (this.shieldTimer > 600) { // 10 sec
-                this.shield = saveData.artifacts.shield * 20; // 20 Shield per level
+            if (this.shieldTimer > 600) { 
+                this.shield = saveData.artifacts.shield * 20; 
                 this.shieldTimer = 0;
                 createPopup("SHIELD", this.x, this.y - 40, '#00ccff');
             }
@@ -1056,7 +1041,7 @@ class Player {
         if (this.dashTime > 0) {
             this.x += this.dashVec.x * 15 * speedMult; this.y += this.dashVec.y * 15 * speedMult;
             this.dashTime--;
-            if(this.dashTime % 2 === 0) state.particles.push(new Particle(this.x, this.y, '#00ffcc', 0, 15, 10)); // Afterimage
+            if(this.dashTime % 2 === 0) state.particles.push(new Particle(this.x, this.y, '#00ffcc', 0, 15, 10)); 
         } else {
             let dx = 0, dy = 0;
             if (state.joystick.active) { dx += state.joystick.dx; dy += state.joystick.dy; }
@@ -1100,7 +1085,7 @@ class Player {
 
         this.dashVec = {x: dx, y: dy};
         this.dashTime = 10; 
-        this.dashCd = Math.floor(120 * (1 - this.cdReduc/2) * state.sessionStats.dashCdMult); // Cap dash cooldown reduction
+        this.dashCd = Math.floor(120 * (1 - this.cdReduc/2) * state.sessionStats.dashCdMult); 
         createExplosion(this.x, this.y, '#00ffff', 10);
         state.shockwaves.push(new Shockwave(this.x, this.y, 40, '#00ffff'));
     }
@@ -1118,11 +1103,10 @@ class Player {
             return;
         }
 
-        // Damage Reduction
         amt = amt * (1 - state.sessionStats.dmgReducPct);
         amt = Math.max(1, amt - state.sessionStats.armor);
         this.hp -= amt;
-        this.invuln = 30 + (saveData.upgrades.invuln || 0) * 12; // +0.2s per level
+        this.invuln = 30 + (saveData.upgrades.invuln || 0) * 12; 
         
         const thorns = state.sessionStats.thorns;
         if (thorns > 0) { state.enemies.forEach(e => { if(Math.hypot(e.x - this.x, e.y - this.y) < 100) e.takeDamage(amt * thorns * 0.5); }); }
@@ -1143,12 +1127,10 @@ class Player {
     
     getDamage(baseDmg) {
          let dmg = baseDmg * this.dmgMult;
-         // Rage
          if (this.rageFactor > 0) {
              const missing = 1 - (this.hp / this.maxHp);
              dmg *= (1 + missing * this.rageFactor);
          }
-         // Berserker Helm
          if (saveData.artifacts.berserk_helm && (this.hp / this.maxHp) <= 0.5) {
              dmg *= 1.3;
          }
@@ -1159,13 +1141,11 @@ class Player {
         ctx.save();
         ctx.translate(this.x, this.y);
         
-        // Berserk scale
         if (saveData.currentUlt === 'berserk' && state.ult.activeTime > 0) {
             const scale = 1.5;
             ctx.scale(scale, scale);
         }
 
-        // Dash Cooldown Indicator
         if(this.dashCd > 0) {
             ctx.beginPath(); ctx.arc(0, 0, this.size + 8, 0, (Math.PI * 2) * (1 - this.dashCd/(120*(1-this.cdReduc/2)*state.sessionStats.dashCdMult)));
             ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 2; ctx.stroke();
@@ -1193,26 +1173,26 @@ class Player {
             ctx.beginPath(); ctx.arc(0, 0, this.size, 0, Math.PI * 2); ctx.fill();
             ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(-7, -2, 4, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(7, -2, 4, 0, Math.PI*2); ctx.fill();
         } else if (this.skin === 'ninja') {
-            ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(0, 0, this.size, 0, Math.PI*2); ctx.fill(); // Hood
-            ctx.fillStyle = '#ffccaa'; ctx.beginPath(); ctx.rect(-8, -4, 16, 6); ctx.fill(); // Face
-            ctx.fillStyle = '#f00'; ctx.beginPath(); ctx.moveTo(15, -5); ctx.lineTo(25, -15); ctx.lineTo(15, -15); ctx.fill(); // Scarf
+            ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(0, 0, this.size, 0, Math.PI*2); ctx.fill(); 
+            ctx.fillStyle = '#ffccaa'; ctx.beginPath(); ctx.rect(-8, -4, 16, 6); ctx.fill(); 
+            ctx.fillStyle = '#f00'; ctx.beginPath(); ctx.moveTo(15, -5); ctx.lineTo(25, -15); ctx.lineTo(15, -15); ctx.fill(); 
         } else if (this.skin === 'paladin') {
             ctx.fillStyle = '#eee'; ctx.beginPath(); ctx.arc(0, 0, this.size, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = '#ffd700'; ctx.beginPath(); ctx.moveTo(0, -25); ctx.lineTo(-5, -15); ctx.lineTo(5, -15); ctx.fill(); // Halo
-            ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 15); ctx.moveTo(-5, 5); ctx.lineTo(5, 5); ctx.strokeStyle = '#ffd700'; ctx.lineWidth=2; ctx.stroke(); // Cross
+            ctx.fillStyle = '#ffd700'; ctx.beginPath(); ctx.moveTo(0, -25); ctx.lineTo(-5, -15); ctx.lineTo(5, -15); ctx.fill(); 
+            ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 15); ctx.moveTo(-5, 5); ctx.lineTo(5, 5); ctx.strokeStyle = '#ffd700'; ctx.lineWidth=2; ctx.stroke(); 
         } else if (this.skin === 'cyberpunk') {
             ctx.fillStyle = '#0ff'; ctx.beginPath(); ctx.arc(0, 0, this.size, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = '#f0f'; ctx.beginPath(); ctx.rect(-10, -5, 20, 4); ctx.fill(); // Visor
+            ctx.fillStyle = '#f0f'; ctx.beginPath(); ctx.rect(-10, -5, 20, 4); ctx.fill(); 
         } else if (this.skin === 'vampire') {
              ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0, 0, this.size, 0, Math.PI*2); ctx.fill();
-             ctx.fillStyle = '#000'; ctx.beginPath(); ctx.moveTo(-10, -10); ctx.lineTo(0, 0); ctx.lineTo(10, -10); ctx.fill(); // Hair
-             ctx.fillStyle = '#900'; ctx.beginPath(); ctx.moveTo(-5, 10); ctx.lineTo(5, 10); ctx.lineTo(0, 20); ctx.fill(); // Collar
+             ctx.fillStyle = '#000'; ctx.beginPath(); ctx.moveTo(-10, -10); ctx.lineTo(0, 0); ctx.lineTo(10, -10); ctx.fill(); 
+             ctx.fillStyle = '#900'; ctx.beginPath(); ctx.moveTo(-5, 10); ctx.lineTo(5, 10); ctx.lineTo(0, 20); ctx.fill(); 
         } else if (this.skin === 'knight') {
              ctx.fillStyle = '#aaa'; ctx.beginPath(); ctx.arc(0, 0, this.size, 0, Math.PI*2); ctx.fill();
-             ctx.fillStyle = '#333'; ctx.beginPath(); ctx.rect(-5, -10, 10, 20); ctx.fill(); // Visor slit
+             ctx.fillStyle = '#333'; ctx.beginPath(); ctx.rect(-5, -10, 10, 20); ctx.fill(); 
         } else if (this.skin === 'wizard') {
              ctx.fillStyle = '#339'; ctx.beginPath(); ctx.arc(0, 0, this.size, 0, Math.PI*2); ctx.fill();
-             ctx.fillStyle = '#339'; ctx.beginPath(); ctx.moveTo(-15, -5); ctx.lineTo(15, -5); ctx.lineTo(0, -35); ctx.fill(); // Hat
+             ctx.fillStyle = '#339'; ctx.beginPath(); ctx.moveTo(-15, -5); ctx.lineTo(15, -5); ctx.lineTo(0, -35); ctx.fill(); 
         } else {
             ctx.beginPath(); ctx.arc(0, 0, this.size, 0, Math.PI * 2); ctx.fill();
             ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.beginPath(); ctx.arc(-6, -4, 4, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(6, -4, 4, 0, Math.PI*2); ctx.fill();
@@ -1249,13 +1229,12 @@ class Enemy {
         this.type = type; this.x = x; this.y = y; this.pushX = 0; this.pushY = 0; this.frozen = 0;
         this.shootTimer = 0; this.volatileTimer = 0; this.isElite = isElite;
         this.flashTime = 0;
-        this.dead = false; // Add dead flag for safe removal
-        this.phaseTimer = 0; // For PHASE enemy
+        this.dead = false; 
+        this.phaseTimer = 0; 
         
         let scaler = 1 + (state.time / 180);
         if (state.isVoidMode) scaler *= 2; 
 
-        // Apply Golden Skull difficulty
         if (saveData.artifacts.skull) {
              scaler *= 1.3;
         }
@@ -1275,9 +1254,9 @@ class Enemy {
         
         if (state.isVoidMode) { this.dmg *= 1.5; this.speed *= 1.2; }
         if (state.isHellMode) {
-            this.hp *= 20; 
-            this.dmg = 9999; // One shot
-            this.speed *= 1.5;
+            this.hp *= 50; 
+            this.dmg = 99999; 
+            this.speed *= 2.0;
             this.color = '#ff0000';
         }
 
@@ -1294,11 +1273,9 @@ class Enemy {
         if(this.flashTime > 0) this.flashTime--;
         this.x += this.pushX; this.y += this.pushY; this.pushX *= 0.9; this.pushY *= 0.9;
         
-        // Prevent NaN logic
         if (isNaN(this.x)) this.x = player.x + 400;
         if (isNaN(this.y)) this.y = player.y + 400;
 
-        // Phase Shifter logic
         if (this.type === 'PHASE') {
              this.phaseTimer++;
              if (this.phaseTimer > 180) this.phaseTimer = 0;
@@ -1308,7 +1285,7 @@ class Enemy {
 
         const dx = player.x - this.x, dy = player.y - this.y;
         let dist = Math.sqrt(dx*dx + dy*dy);
-        if (dist === 0) dist = 0.001; // Avoid divide by zero
+        if (dist === 0) dist = 0.001; 
         
         if (this.type === 'SHOOTER') {
             if (dist > 300) { this.x += (dx / dist) * this.speed; this.y += (dy / dist) * this.speed; }
@@ -1327,27 +1304,23 @@ class Enemy {
         }
         
         if (dist < this.size + player.size) { 
-            // Phase enemy can't hurt if phased out
             if (this.type === 'PHASE' && this.phaseTimer > 120) return;
             player.takeDamage(this.dmg); 
             if(this.type !== 'WORM_HEAD' && this.type !== 'TANK') { this.pushX = -(dx/dist)*10; this.pushY = -(dy/dist)*10; }
         }
     }
     takeDamage(amt, knockback = 0, sourceX = 0, sourceY = 0) {
-        // Phase immunity
         if (this.type === 'PHASE' && this.phaseTimer > 120) return false;
 
         this.flashTime = 5;
         if(saveData.artifacts.axe) { const hpPct = state.player.hp / state.player.maxHp; if(hpPct < 0.5) amt *= 1.5; if(hpPct < 0.2) amt *= 2.0; }
         
-        // Dark Matter artifact
         if (saveData.artifacts.darkmatter) {
-             amt += this.maxHp * 0.02; // 2% max HP damage
+             amt += this.maxHp * 0.02; 
         }
         
-        // Midas artifact
         if (saveData.artifacts.midas) {
-            if (Math.random() < 0.1) { // 10% chance
+            if (Math.random() < 0.1) { 
                  state.coins += 1; saveData.coins += 1;
                  createPopup("+1", this.x, this.y, '#ffd700');
             }
@@ -1356,11 +1329,6 @@ class Enemy {
         let isCrit = false;
         if (Math.random() < state.player.critChance) { amt *= 2; isCrit = true; }
 
-        // Use player getDamage to include multipliers
-        // but here we already passed `amt` which usually comes from `projectile.dmg` or weapon stats
-        // Weapons usually pre-calculate `dmg * player.dmgMult`
-        // We will just apply crit here, and potentially any enemy specific vulnerabilty
-        
         if (knockback > 0 && sourceX && sourceY && this.type !== 'WORM_HEAD' && this.type !== 'WORM_BODY') {
             if (this.type === 'TANK') knockback *= 0.2;
             const dx = this.x - sourceX, dy = this.y - sourceY;
@@ -1379,7 +1347,7 @@ class Enemy {
     }
     die() { 
         this.dead = true;
-        createExplosion(this.x, this.y, this.color, 3); // Reduced particles
+        createExplosion(this.x, this.y, this.color, 3); 
         if(this.type === 'SPLITTER') {
             state.enemies.push(new Enemy('SPLIT_MINI', this.x + 10, this.y));
             state.enemies.push(new Enemy('SPLIT_MINI', this.x - 10, this.y));
@@ -1400,12 +1368,10 @@ class Enemy {
         else if (rand < 0.01 * (1+luck*0.2)) state.items.push(new Item(this.x, this.y, 0, 'MAGNET'));
         else if (rand < 0.02 * (1+luck*0.2) && !state.isHellMode) state.items.push(new Item(this.x, this.y, 0, 'HEAL'));
         else {
-             // Always drop XP gem
              let xpVal = 2 * (state.isVoidMode?2:1);
-             if (state.isHellMode) xpVal *= 5; // Hell mode xp bonus
+             if (state.isHellMode) xpVal *= 5; 
              state.items.push(new Item(this.x, this.y, xpVal, 'XP'));
              
-             // If Gold Rush or Chance, ALSO drop Coin
              if (isGoldRush || rand < (state.isVoidMode ? 0.2 : 0.1) * (1+luck*0.1) || state.isHellMode) {
                  let coin = new Item(this.x + (Math.random()-0.5)*20, this.y + (Math.random()-0.5)*20, 300, 'XP'); 
                  coin.isCoin = true; coin.color = '#ffd700'; 
@@ -1422,15 +1388,15 @@ class Enemy {
     }
     draw(ctx) {
         if (this.type === 'PHASE') {
-             if (this.phaseTimer > 120) ctx.globalAlpha = 0.2; // Phased out
-             else if (this.phaseTimer > 100) ctx.globalAlpha = 0.5 + Math.sin(this.phaseTimer)*0.5; // Blinking
+             if (this.phaseTimer > 120) ctx.globalAlpha = 0.2; 
+             else if (this.phaseTimer > 100) ctx.globalAlpha = 0.5 + Math.sin(this.phaseTimer)*0.5; 
         }
         if(this.flashTime > 0) {
             ctx.fillStyle = '#ffffff';
         } else {
             ctx.fillStyle = this.color;
         }
-        // Optimized: Removed shadowBlur
+        
         ctx.beginPath();
         if (this.type === 'SQUARE') ctx.rect(this.x - this.size, this.y - this.size, this.size*2, this.size*2);
         else if (this.type === 'TRIANGLE') { ctx.moveTo(this.x, this.y - this.size); ctx.lineTo(this.x + this.size, this.y + this.size); ctx.lineTo(this.x - this.size, this.y + this.size); }
@@ -1453,10 +1419,10 @@ class Boss extends Enemy {
     die() { 
         this.dead = true;
         createExplosion(this.x, this.y, this.color, 20); 
-        const coins = state.isVoidMode ? 100 : 50; // Increased drop count
+        const coins = state.isVoidMode ? 100 : 50; 
         for(let i=0; i<coins; i++) { 
             let it = new Item(this.x + (Math.random()-0.5)*120, this.y + (Math.random()-0.5)*120, 50, 'XP'); 
-            it.isCoin = true; it.val = state.isHellMode ? 20000 : 2000; // Increased Boss Coin Value
+            it.isCoin = true; it.val = state.isHellMode ? 20000 : 2000; 
             state.items.push(it); 
         } 
         state.boss = null; 
@@ -1492,19 +1458,18 @@ class Item {
             else if (this.type === 'BOMB') { state.enemies.forEach(e => { if(!(e instanceof Boss)) e.die(); else e.takeDamage(500); }); createExplosion(player.x, player.y, '#fff', 20); createPopup("BOOM!", this.x, this.y, '#fa0'); }
             else if (this.type === 'CHEST') {
                  addXp(200); 
-                 const gold = state.isHellMode ? 300000 : 30000; // Increased Chest value
+                 const gold = state.isHellMode ? 300000 : 30000; 
                  state.coins += gold; 
-                 saveData.coins += gold; // Add to wallet immediately
+                 saveData.coins += gold; 
                  saveData.stats.totalCoins += gold; 
                  createPopup(`CHEST! +${gold}🪙`, this.x, this.y, '#ffd700');
                  createExplosion(this.x, this.y, '#ffd700', 10);
             }
             else if (this.isCoin) { 
-                // Increased Coin value (base 200)
                 const baseVal = this.val || 500;
                 const gain = Math.floor(baseVal * (1 + saveData.upgrades.greed * 0.1) * state.sessionStats.greedMult * (saveData.artifacts.skull ? 1.3 : 1));
                 state.coins += gain; 
-                saveData.coins += gain; // Add to wallet immediately
+                saveData.coins += gain; 
                 saveData.stats.totalCoins += gain; 
                 createPopup(`+${gain}🪙`, this.x, this.y, '#ffd700');
             } else { 
@@ -1532,33 +1497,129 @@ class Projectile {
         this.x = x; this.y = y; this.vx = vx; this.vy = vy; this.dmg = dmg; this.color = color; 
         this.duration = duration * (1 + (saveData.upgrades.duration || 0) * 0.1) * state.sessionStats.durationMult; 
         this.size = size * state.sessionStats.sizeMult * state.sessionStats.areaMult; 
-        this.type = type; // bullet, missile, slash, laser, enemy_bullet, boomerang, arrow, scythe, grenade, cosmic, chain, quantum, entropy, cluster, sonic
+        this.type = type; 
         this.hitList = []; this.knockback = knockback;
         this.angle = Math.atan2(vy, vx);
-        this.returning = false; // For boomerang
+        this.returning = false; 
         this.frozen = false;
-        this.targetX = 0; this.targetY = 0; // For grenade
+        this.targetX = 0; this.targetY = 0;
     }
     update() { 
         if(this.frozen) return false;
 
         if (this.type === 'cosmic') {
-            this.size += 2; // Expand beam
+            this.size += 2; 
             this.duration--;
             return this.duration <= 0;
+        }
+
+        if (this.type === 'flail') {
+            this.angle += 0.1;
+            const r = 100 * state.sessionStats.areaMult;
+            this.x = state.player.x + Math.cos(this.angle) * r;
+            this.y = state.player.y + Math.sin(this.angle) * r;
+            this.duration--;
+            return this.duration <= 0;
+        }
+
+        if (this.type === 'tornado') {
+            this.x += this.vx; this.y += this.vy;
+            if(state.time%10===0) {
+                this.vx += (Math.random()-0.5); this.vy += (Math.random()-0.5);
+            }
+            this.duration--;
+            return this.duration <= 0;
+        }
+
+        if (this.type === 'fireworks') {
+            this.y -= 10;
+            this.duration--;
+            if (this.duration <= 0) {
+                createExplosion(this.x, this.y, '#ff00ff', 20, 5);
+                state.shockwaves.push(new Shockwave(this.x, this.y, 100, '#ff00ff'));
+                state.enemies.forEach(e => {
+                    if(Math.hypot(e.x-this.x, e.y-this.y) < 100) e.takeDamage(this.dmg);
+                });
+                return true;
+            }
+            return false;
+        }
+
+        if (this.type === 'laser_sword') {
+            this.duration--;
+            this.angle += 0.2;
+            const range = 150 * state.sessionStats.areaMult;
+            // Sweep damage
+            const px = state.player.x, py = state.player.y;
+            state.enemies.forEach(e => {
+                if(Math.hypot(e.x - px, e.y - py) < range) {
+                    // Check angle (simplified to full circle for now or cone)
+                    e.takeDamage(this.dmg);
+                }
+            });
+            return this.duration <= 0;
+        }
+
+        if (this.type === 'magma') {
+            this.x += this.vx; this.y += this.vy;
+            if(state.time%10===0) {
+                state.acidPools.push(new AcidPool(this.x, this.y, 60, 30, this.dmg*0.5)); // Magma pool
+            }
+            this.duration--;
+            return this.duration <= 0;
+        }
+
+        if (this.type === 'drill') {
+            this.x += this.vx; this.y += this.vy;
+            this.duration--;
+            state.enemies.forEach(e => {
+                if(Math.hypot(e.x-this.x, e.y-this.y) < this.size) e.takeDamage(this.dmg*0.1);
+            });
+            return this.duration <= 0;
+        }
+
+        if (this.type === 'guardian') {
+            const t = state.time * 0.1;
+            this.x = state.player.x + Math.cos(t) * 40;
+            this.y = state.player.y + Math.sin(t) * 40;
+            this.duration--;
+            return this.duration <= 0;
+        }
+
+        if (this.type === 'ice_spike') {
+            this.duration--;
+            if(this.duration < 10) { // Delayed damage
+                state.enemies.forEach(e => {
+                    if(Math.hypot(e.x-this.x, e.y-this.y) < this.size) { e.takeDamage(this.dmg); e.frozen=60; }
+                });
+            }
+            return this.duration <= 0;
+        }
+
+        if (this.type === 'chain_bomb') {
+            this.x += this.vx; this.y += this.vy;
+            this.duration--;
+            if (this.duration <= 0) {
+                createExplosion(this.x, this.y, '#f00', 10);
+                for(let i=0; i<3; i++) {
+                    const a = Math.random() * Math.PI*2;
+                    state.projectiles.push(new Projectile(this.x, this.y, Math.cos(a)*5, Math.sin(a)*5, this.dmg*0.5, '#f00', 20, 5, 'grenade'));
+                }
+                return true;
+            }
+            return false;
         }
 
         if (this.type === 'entropy') {
             this.size += 0.5;
             this.duration--;
             if (state.time % 10 === 0) {
-                 // Change color
                  const hue = (state.time * 10) % 360;
                  this.color = `hsl(${hue}, 100%, 50%)`;
                  state.enemies.forEach(e => {
                      if (Math.hypot(e.x - this.x, e.y - this.y) < this.size) {
                          e.takeDamage(this.dmg);
-                         if(Math.random()<0.3) e.pushX += (Math.random()-0.5)*10; // Chaos push
+                         if(Math.random()<0.3) e.pushX += (Math.random()-0.5)*10; 
                      }
                  });
             }
@@ -1581,7 +1642,7 @@ class Projectile {
                 const speed = 15 * state.sessionStats.projectileSpeed;
                 this.x += (dx/dist) * speed; this.y += (dy/dist) * speed;
                 this.angle += 0.3;
-                if(dist < 20) return true; // Caught
+                if(dist < 20) return true; 
             }
             return false;
         }
@@ -1608,7 +1669,6 @@ class Projectile {
             this.x += this.vx; this.y += this.vy;
             this.duration--;
             if (this.duration <= 0) {
-                // Explode
                 createExplosion(this.x, this.y, '#00ff44', 10, 10);
                 state.shockwaves.push(new Shockwave(this.x, this.y, 80 * state.sessionStats.areaMult, '#00ff44'));
                 state.enemies.forEach(e => {
@@ -1617,7 +1677,6 @@ class Projectile {
                     }
                 });
                 
-                // Cluster logic
                 if (this.type === 'cluster') {
                     for(let i=0; i<6; i++) {
                         const a = i * Math.PI / 3;
@@ -1630,7 +1689,6 @@ class Projectile {
             return false;
         }
         
-        // Quantum Logic (Jumping forward)
         if (this.type === 'quantum') {
             if (state.time % 10 === 0) {
                 this.x += this.vx * 3;
@@ -1641,11 +1699,11 @@ class Projectile {
         
         if (this.type === 'sonic') {
             this.x += this.vx; this.y += this.vy; this.duration--;
-            this.size += 2; // Expand
+            this.size += 2; 
             state.enemies.forEach(e => {
                  if(Math.hypot(e.x - this.x, e.y - this.y) < this.size) {
                      e.pushX += this.vx * 0.5; e.pushY += this.vy * 0.5;
-                     e.takeDamage(this.dmg * 0.1); // Tick damage
+                     e.takeDamage(this.dmg * 0.1); 
                  }
             });
             return this.duration <= 0;
@@ -1653,19 +1711,45 @@ class Projectile {
 
         this.x += this.vx; this.y += this.vy; this.duration--; 
         if(this.type === 'missile' || this.type === 'nuke') {
-            if(state.time % 2 === 0) state.particles.push(new Particle(this.x, this.y, '#555', 0, 5, 2)); // Reduced smoke
+            if(state.time % 2 === 0) state.particles.push(new Particle(this.x, this.y, '#555', 0, 5, 2)); 
         }
         return this.duration <= 0; 
     }
     draw(ctx) { 
         ctx.fillStyle = this.color; 
         
-        if (this.type === 'cosmic') {
+        if (this.type === 'flail') {
+            ctx.beginPath(); ctx.arc(this.x, this.y, 15, 0, Math.PI*2); ctx.fill();
+            ctx.strokeStyle = '#fff'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(state.player.x, state.player.y); ctx.lineTo(this.x, this.y); ctx.stroke();
+        } else if (this.type === 'tornado') {
+            ctx.fillStyle = 'rgba(200,200,200,0.5)';
+            ctx.beginPath(); ctx.moveTo(this.x-10, this.y-20); ctx.lineTo(this.x+10, this.y-20); ctx.lineTo(this.x, this.y+20); ctx.fill();
+        } else if (this.type === 'laser_sword') {
+            ctx.save(); ctx.translate(state.player.x, state.player.y); ctx.rotate(this.angle);
+            ctx.fillStyle = 'rgba(0,255,255,0.5)';
+            ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0, 150*state.sessionStats.areaMult, -0.5, 0.5); ctx.fill();
+            ctx.restore();
+        } else if (this.type === 'ice_spike') {
+            ctx.fillStyle = '#00ffff';
+            ctx.beginPath(); ctx.moveTo(this.x, this.y-30); ctx.lineTo(this.x+10, this.y); ctx.lineTo(this.x-10, this.y); ctx.fill();
+        } else if (this.type === 'drill') {
+            ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(state.time);
+            ctx.beginPath(); ctx.moveTo(0,-10); ctx.lineTo(5,5); ctx.lineTo(-5,5); ctx.fill();
+            ctx.restore();
+        } else if (this.type === 'guardian') {
+            ctx.beginPath(); ctx.arc(this.x, this.y, 8, 0, Math.PI*2); ctx.fill();
+        } else if (this.type === 'magma') {
+            ctx.beginPath(); ctx.arc(this.x, this.y, 10, 0, Math.PI*2); ctx.fill();
+        } else if (this.type === 'fireworks') {
+            ctx.fillRect(this.x-2, this.y-5, 4, 10);
+        } else if (this.type === 'chain_bomb') {
+            ctx.beginPath(); ctx.arc(this.x, this.y, 10, 0, Math.PI*2); ctx.fill(); ctx.fillStyle='#000'; ctx.fillText("💣", this.x-5, this.y+5);
+        } else if (this.type === 'cosmic') {
              ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.angle);
              ctx.fillStyle = `rgba(100, 200, 255, ${this.duration/30})`;
-             ctx.fillRect(0, -this.size/2, 2000, this.size); // Screen wide
+             ctx.fillRect(0, -this.size/2, 2000, this.size); 
              ctx.restore();
-        } else if (this.type === 'entropy' || this.type === 'sonic') {
+        } else if (this.type === 'entropy' || this.type === 'sonic' || this.type === 'static') {
              ctx.globalAlpha = 0.5;
              ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI*2); ctx.fill();
              ctx.strokeStyle = '#fff'; ctx.stroke();
@@ -1693,7 +1777,7 @@ class Projectile {
              ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
              ctx.restore();
         } else if (this.type === 'saw') {
-             ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.angle * 10); // Spin fast
+             ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.angle * 10); 
              ctx.beginPath(); ctx.arc(0,0, this.size, 0, Math.PI*2); ctx.stroke();
              for(let i=0; i<8; i++) {
                  ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(this.size+5, 0); ctx.stroke();
@@ -1976,14 +2060,14 @@ function renderWeaponSelection() {
     const cont = document.getElementById('weapon-cards');
     cont.innerHTML = '';
     const pool = UPGRADES.filter(u => u.type === 'WEAPON' && !u.id.includes('hidden'));
-    const options = [];
     
-    // Pick 3 random
-    while(options.length < 3 && pool.length > 0) {
-        const idx = Math.floor(Math.random() * pool.length);
-        options.push(pool[idx]);
-        pool.splice(idx, 1);
+    // Improved Shuffle for Fairness
+    for(let i=pool.length-1; i>0; i--){
+        const j = Math.floor(Math.random() * (i+1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
     }
+
+    const options = pool.slice(0, 3);
     
     options.forEach(w => {
         const d = document.createElement('div');
@@ -2059,7 +2143,7 @@ function update() {
     if (state.time % 60 === 0) state.score++;
     
     // Spawning Logic
-    const cap = state.isHellMode ? 300 : 100;
+    const cap = state.isHellMode ? 600 : 250; // Increased Cap
     
     if (state.isBossRush) {
         // Boss Rush Logic
@@ -2076,8 +2160,8 @@ function update() {
         }
     } else {
         // Standard Logic
-        let spawnRate = Math.max(40, 100 - Math.floor(state.time / 60)); // Slower spawn rate
-        if (state.isHellMode) spawnRate = 20; 
+        let spawnRate = Math.max(30, 80 - Math.floor(state.time / 60)); // Faster spawn rate
+        if (state.isHellMode) spawnRate = 10; // Insane spawn rate
 
         if (state.time % spawnRate === 0 && state.enemies.length < cap) spawnEnemy(); 
 
@@ -2159,14 +2243,11 @@ function update() {
         let hit = false;
         if(p.update()) return false;
         
-        // Only check collision with live enemies
-        // Cosmic Ray hits everything in path
         if (p.type === 'cosmic') {
-             // Hit all
              state.enemies.forEach(e => {
                  if(state.time%5===0) e.takeDamage(p.dmg);
              });
-             return true; // Keep alive until duration
+             return true; 
         }
 
         for (const e of state.enemies) {
@@ -2176,13 +2257,13 @@ function update() {
             if (Math.hypot(e.x - p.x, e.y - p.y) < e.size + p.size) {
                 if (!p.hitList.includes(e)) {
                     if (p.type === 'enemy_bullet') {
-                         // Logic handled in update loop end
+                         
                     } else {
                         // Player projectile hitting enemy
                         if (e.takeDamage(p.dmg, p.knockback, state.player.x, state.player.y)) {
                             // Enemy died inside takeDamage
                         }
-                        if (p.type !== 'scythe' && p.type !== 'chain' && p.type !== 'saw') p.hitList.push(e); 
+                        if (p.type !== 'scythe' && p.type !== 'chain' && p.type !== 'saw' && p.type !== 'drill' && p.type !== 'guardian') p.hitList.push(e); 
                         else { if(state.time%10===0) e.takeDamage(p.dmg*0.5); }
                         
                         // Chain Logic
@@ -2198,7 +2279,6 @@ function update() {
 
                         // Quantum Logic
                         if (p.type === 'quantum') {
-                             // Teleport to next
                              let next = getRandomEnemy();
                              if(next && next !== e) {
                                   p.x = next.x + (Math.random()-0.5)*50;
@@ -2343,6 +2423,7 @@ function addWeapon(id) {
         if (id === 'drone') state.drones.push(new Drone(state.player, 0));
         if (id === 'spikedball') state.spikeBalls.push(new SpikeBall(state.player));
         if (id === 'turret') state.turrets.push(new Turret(state.player.x, state.player.y, state.player.getDamage(15)));
+        if (id === 'static') state.projectiles.push(new Projectile(state.player.x, state.player.y, 0, 0, state.player.getDamage(20), '#8888ff', 999999, 30, 'static'));
     } else {
         state.weapons[id].level++;
         if (state.weapons[id].level === 5) checkEvolution(id);
@@ -2386,7 +2467,7 @@ function updateWeapons() {
                     const angle = Math.atan2(target.y - p.y, target.x - p.x) + (i - count/2)*0.1;
                     const vx = Math.cos(angle) * 10 * stats.projectileSpeed * speedMult;
                     const vy = Math.sin(angle) * 10 * stats.projectileSpeed * speedMult;
-                    state.projectiles.push(new Projectile(p.x, p.y, vx, vy, getDmg(15 * w.level), w.evolved?'#ff0099':'#ffff00', 60, (w.evolved?8:4)*sizeMult, w.evolved?'laser':'bullet'));
+                    state.projectiles.push(new Projectile(p.x, p.y, vx, vy, getDmg(12 * w.level), w.evolved?'#ff0099':'#ffff00', 60, (w.evolved?8:4)*sizeMult, w.evolved?'laser':'bullet'));
                 }
             }
         }
@@ -2413,7 +2494,7 @@ function updateWeapons() {
             const ox = p.x + Math.cos(angle) * r;
             const oy = p.y + Math.sin(angle) * r;
             state.enemies.forEach(e => {
-                if(Math.hypot(e.x - ox, e.y - oy) < 20 * sizeMult) e.takeDamage(getDmg(10 * w.level), 1, p.x, p.y);
+                if(Math.hypot(e.x - ox, e.y - oy) < 20 * sizeMult) e.takeDamage(getDmg(8 * w.level), 0.5, p.x, p.y);
             });
              state.particles.push(new Particle(ox, oy, w.evolved?'#000':'#00ccff', 0, 5, 2));
         }
@@ -2447,7 +2528,7 @@ function updateWeapons() {
     if (state.weapons.ion) {
         const w = state.weapons.ion;
         w.timer++;
-        if (w.timer > 200 * (1 - p.cdReduc)) {
+        if (w.timer > 240 * (1 - p.cdReduc)) {
             w.timer = 0;
             const t = getRandomEnemy();
             if (t) state.ionBeams.push(new IonBeam(t.x, t.y, getDmg(100*w.level), 60*stats.areaMult*sizeMult));
@@ -2692,6 +2773,89 @@ function updateWeapons() {
              }
         }
     }
+
+    // --- New Weapons Logic v30.0 ---
+    if(state.weapons.flail) {
+        const w = state.weapons.flail;
+        if(w.timer === 0) {
+            state.projectiles.push(new Projectile(p.x, p.y, 0, 0, getDmg(30*w.level), '#888', 999999, 15*sizeMult, 'flail'));
+            w.timer = 1;
+        }
+    }
+    if(state.weapons.tornado) {
+        const w = state.weapons.tornado;
+        w.timer++;
+        if(w.timer > 90*(1-p.cdReduc)) {
+            w.timer = 0;
+            state.projectiles.push(new Projectile(p.x, p.y, (Math.random()-0.5)*5, (Math.random()-0.5)*5, getDmg(10*w.level), '#ccc', 120, 30*sizeMult, 'tornado'));
+        }
+    }
+    if(state.weapons.fireworks) {
+        const w = state.weapons.fireworks;
+        w.timer++;
+        if(w.timer > 60*(1-p.cdReduc)) {
+            w.timer = 0;
+            state.projectiles.push(new Projectile(p.x, p.y, 0, 0, getDmg(40*w.level), '#fff', 30, 5, 'fireworks'));
+        }
+    }
+    if(state.weapons.laser_sword) {
+        const w = state.weapons.laser_sword;
+        w.timer++;
+        if(w.timer > 50*(1-p.cdReduc)) {
+            w.timer = 0;
+            const proj = new Projectile(p.x, p.y, 0, 0, getDmg(30*w.level), '#0ff', 10, 10, 'laser_sword');
+            proj.angle = state.facingRight ? -Math.PI/4 : Math.PI*3/4;
+            state.projectiles.push(proj);
+        }
+    }
+    if(state.weapons.magma) {
+        const w = state.weapons.magma;
+        w.timer++;
+        if(w.timer > 80*(1-p.cdReduc)) {
+            w.timer = 0;
+            let target = getNearestEnemy();
+            const angle = target ? Math.atan2(target.y-p.y, target.x-p.x) : Math.random()*Math.PI*2;
+            state.projectiles.push(new Projectile(p.x, p.y, Math.cos(angle)*5, Math.sin(angle)*5, getDmg(10*w.level), '#f50', 120, 10*sizeMult, 'magma'));
+        }
+    }
+    if(state.weapons.drill) {
+        const w = state.weapons.drill;
+        w.timer++;
+        if(w.timer > 100*(1-p.cdReduc)) {
+            w.timer = 0;
+            let target = getNearestEnemy();
+            const angle = target ? Math.atan2(target.y-p.y, target.x-p.x) : (state.facingRight?0:Math.PI);
+            state.projectiles.push(new Projectile(p.x, p.y, Math.cos(angle)*2, Math.sin(angle)*2, getDmg(5*w.level), '#888', 200, 15*sizeMult, 'drill'));
+        }
+    }
+    if(state.weapons.guardian) {
+        const w = state.weapons.guardian;
+        if(w.timer === 0) {
+            state.projectiles.push(new Projectile(p.x, p.y, 0, 0, getDmg(20*w.level), '#0ff', 999999, 8*sizeMult, 'guardian'));
+            w.timer = 1;
+        }
+    }
+    if(state.weapons.ice_spike) {
+        const w = state.weapons.ice_spike;
+        w.timer++;
+        if(w.timer > 70*(1-p.cdReduc)) {
+            w.timer = 0;
+            let target = getRandomEnemy();
+            if(target) {
+                state.projectiles.push(new Projectile(target.x, target.y, 0, 0, getDmg(25*w.level), '#0ff', 20, 20*sizeMult, 'ice_spike'));
+            }
+        }
+    }
+    if(state.weapons.chain_bomb) {
+        const w = state.weapons.chain_bomb;
+        w.timer++;
+        if(w.timer > 90*(1-p.cdReduc)) {
+            w.timer = 0;
+            let target = getNearestEnemy();
+            const angle = target ? Math.atan2(target.y-p.y, target.x-p.x) : Math.random()*Math.PI*2;
+            state.projectiles.push(new Projectile(p.x, p.y, Math.cos(angle)*6, Math.sin(angle)*6, getDmg(30*w.level), '#500', 40, 10*sizeMult, 'chain_bomb'));
+        }
+    }
 }
 
 function getNearestEnemy(x, y) {
@@ -2711,26 +2875,22 @@ function getRandomEnemy() {
 }
 
 function draw() {
-    // Clear Background
     ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--bg');
     ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
 
     ctx.save();
     
-    // Camera
     const px = state.player.x; const py = state.player.y;
     const cx = CANVAS_W / 2 - px * ZOOM;
     const cy = CANVAS_H / 2 - py * ZOOM;
     ctx.translate(cx + px * (1-ZOOM), cy + py * (1-ZOOM)); 
     ctx.setTransform(ZOOM, 0, 0, ZOOM, CANVAS_W/2 - px*ZOOM, CANVAS_H/2 - py*ZOOM);
 
-    // Shake Effect (Ultimate)
-    if (state.ult.activeTime > 580) { // Shake for first few frames
+    if (state.ult.activeTime > 580) { 
         const shake = (Math.random()-0.5) * 20;
         ctx.translate(shake, shake);
     }
 
-    // Grid (Lightweight)
     ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 1;
     const gridSize = 100;
     const startX = Math.floor((px - CANVAS_W/2/ZOOM)/gridSize)*gridSize;
@@ -2763,7 +2923,6 @@ function draw() {
     state.particles.forEach(p => p.draw(ctx));
     state.shockwaves.forEach(s => s.draw(ctx));
     
-    // Popups
     ctx.font = "bold 12px 'Exo 2'";
     state.popups.forEach(p => {
         ctx.fillStyle = p.color;
@@ -2774,7 +2933,6 @@ function draw() {
 }
 
 function createExplosion(x, y, color, count, size=3) {
-    // Optimized: Reduced particle count significantly
     const realCount = Math.ceil(count / 3); 
     const blast = state.sessionStats.areaMult;
     for(let i=0; i<realCount; i++) state.particles.push(new Particle(x, y, color, 3*blast, size*blast));
@@ -2785,7 +2943,6 @@ function createPopup(text, x, y, color, float=true) {
 }
 
 function updateUI() {
-    // Top Bar
     document.getElementById('level-display').innerText = state.level;
     document.getElementById('kill-display').innerText = state.kills;
     document.getElementById('coin-display').innerText = state.coins;
@@ -2801,7 +2958,6 @@ function updateUI() {
     const s = Math.floor((state.time % 3600) / 60);
     document.getElementById('timer').innerText = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
     
-    // Boss HUD
     if (state.boss) {
         document.getElementById('boss-hp-fill').style.width = ((state.boss.hp / state.boss.maxHp) * 100) + '%';
     }
@@ -2822,7 +2978,7 @@ function addXp(amt) {
 
 function showUpgradeScreen() {
     state.paused = true;
-    save(); // Save progress
+    save(); 
     document.getElementById('upgrade-screen').classList.remove('hidden');
     document.getElementById('cnt-reroll').innerText = state.meta.reroll;
     document.getElementById('cnt-skip').innerText = state.meta.skip;
@@ -2836,29 +2992,33 @@ function generateUpgradeCards() {
     
     const pool = [];
     
-    // Weapon Upgrades
     UPGRADES.forEach(u => {
         if (state.meta.banishedItems.includes(u.id)) return;
         if (u.type === 'WEAPON') {
             if (state.weapons[u.id]) {
                 if(state.weapons[u.id].level < 5) pool.push(u);
             } else {
-                if(Object.keys(state.weapons).length < 6) pool.push(u); // Slot limit
+                if(Object.keys(state.weapons).length < 6) pool.push(u); 
             }
         } else if (u.type === 'STAT') {
             pool.push(u);
         }
     });
 
+    // Improved Shuffle for Fairness
+    for(let i=pool.length-1; i>0; i--){
+        const j = Math.floor(Math.random() * (i+1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+
     const choices = [];
-    for(let i=0; i<3; i++) {
+    // Increase options to 4
+    for(let i=0; i<4; i++) {
         if(pool.length === 0) break;
-        const idx = Math.floor(Math.random() * pool.length);
-        choices.push(pool[idx]);
-        pool.splice(idx, 1);
+        choices.push(pool[i]);
     }
     
-    if(choices.length === 0) { // All maxed
+    if(choices.length === 0) { 
         choices.push({id:'heal', name:'풀 회복', desc:'체력 모두 회복', icon:'💖'});
         choices.push({id:'money', name:'돈다발', desc:'코인 500개', icon:'💰'});
     }
@@ -2882,10 +3042,8 @@ function selectUpgrade(u) {
     else if (u.id === 'money') { state.coins += 500; }
     else if (u.type === 'WEAPON') { addWeapon(u.id); }
     else {
-        // Apply Stat
-        if (u.id === 'heal_stat') state.player.hp += 30; // Emergency Heal
+        if (u.id === 'heal_stat') state.player.hp += 30; 
         else {
-            // Apply temp session buff
             if(u.id === 'giant') state.sessionStats.sizeMult += 0.15;
             if(u.id === 'multishot') state.sessionStats.projectileCount += 1;
             if(u.id === 'sniper') state.sessionStats.projectileSpeed += 0.2;
@@ -2909,18 +3067,18 @@ function selectUpgrade(u) {
 
     document.getElementById('upgrade-screen').classList.add('hidden');
     state.paused = false;
-    save(); // Save progress
+    save(); 
 }
 
-// Meta Upgrades (Reroll/Skip)
+// Meta Upgrades
 function doReroll() {
     if (state.meta.reroll > 0) { state.meta.reroll--; document.getElementById('cnt-reroll').innerText = state.meta.reroll; generateUpgradeCards(); }
 }
 function doSkip() {
     if (state.meta.skip > 0) { 
         state.meta.skip--; 
-        state.coins += 200; // Reward for skipping
-        addXp(state.nextLevelXp * 0.25); // 25% Refund
+        state.coins += 200; 
+        addXp(state.nextLevelXp * 0.25); 
         createPopup("+200 🪙 & +25% XP", state.player.x, state.player.y, '#ffd700');
         document.getElementById('upgrade-screen').classList.add('hidden'); 
         state.paused = false; 
@@ -2933,7 +3091,6 @@ function toggleBanishMode() {
     document.getElementById('btn-banish').style.borderColor = banishMode ? '#f00' : '#555';
 }
 
-// Input Handling
 window.addEventListener('keydown', e => {
     if (state.keys.hasOwnProperty(e.key)) state.keys[e.key] = true;
     if (e.code === 'Space' && !state.keys.space) { state.player && state.player.dash(); state.keys.space = true; }
@@ -2944,7 +3101,6 @@ window.addEventListener('keyup', e => {
     if (e.code === 'Space') state.keys.space = false;
 });
 
-// Touch / Joystick
 const zone = document.getElementById('joystick-zone');
 const base = document.getElementById('joystick-base');
 const knob = document.getElementById('joystick-knob');
@@ -2982,7 +3138,6 @@ const endJoystick = () => {
 zone.addEventListener('pointerup', endJoystick);
 zone.addEventListener('pointercancel', endJoystick);
 
-// Mouse Wheel Zoom
 window.addEventListener('wheel', e => {
     if (state.paused) return;
     ZOOM += e.deltaY * -0.001;
@@ -2994,12 +3149,10 @@ window.addEventListener('wheel', e => {
     state.zoomTimer = setTimeout(() => ind.style.opacity = 0, 1000);
 }, {passive: true});
 
-// Ultimate
 function useUltimate() {
     if (!state.ult.ready || state.paused) return;
     
-    // Trigger Effect
-    state.ult.ready = false; state.ult.charge = 0; state.ult.activeTime = 600; // 10s effect duration
+    state.ult.ready = false; state.ult.charge = 0; state.ult.activeTime = 600; 
     updateUltBtn();
     
     const type = saveData.currentUlt;
@@ -3015,16 +3168,15 @@ function useUltimate() {
         state.enemies.forEach(e => {
             if(!(e instanceof Boss)) e.takeDamage(9999); else e.takeDamage(5000);
         });
-        // Clear projectiles
         state.projectiles = state.projectiles.filter(p => p.type !== 'enemy_bullet');
     } else if (type === 'chrono') {
-        state.enemies.forEach(e => e.frozen = 300); // 5 sec freeze
-        state.projectiles.forEach(p => p.frozen = true); // Freeze projectiles
+        state.enemies.forEach(e => e.frozen = 300); 
+        state.projectiles.forEach(p => p.frozen = true); 
         setTimeout(() => state.projectiles.forEach(p => p.frozen = false), 5000);
         document.body.style.filter = 'grayscale(100%) invert(10%)';
         setTimeout(() => document.body.style.filter = 'none', 5000);
     } else if (type === 'berserk') {
-        state.player.cdReduc = 0.9; // 90% CD reduction
+        state.player.cdReduc = 0.9; 
         state.player.speed *= 2;
         setTimeout(() => { 
             state.player.speed /= 2; 
@@ -3061,7 +3213,6 @@ function endGame() {
     if (state.time > saveData.stats.maxTime) saveData.stats.maxTime = state.time;
     save();
     
-    // Check Achievements
     ACHIEVEMENTS.forEach(a => {
         if (!saveData.achievements.includes(a.id) && a.check(saveData.stats)) {
             saveData.achievements.push(a.id);
@@ -3089,12 +3240,10 @@ function showStartScreen() {
     document.getElementById('start-screen').classList.remove('hidden');
     document.getElementById('joystick-zone').style.display = 'none';
     
-    // Clear Mode visuals in menu
     document.body.className = ''; 
     if(state.isVoidMode) document.body.classList.add('void-mode');
     if(state.isHellMode) document.body.classList.add('hell-mode');
 
-    // Update currency display
     document.getElementById('start-currency').innerText = saveData.coins;
 }
 
@@ -3175,7 +3324,6 @@ function renderArmory() {
         
         const d = document.createElement('div');
         d.className = 'card';
-        // Calculate display value
         let val = 0;
         if(i.id === 'suit') val = lvl * 10;
         else if(i.id === 'boots') val = lvl * 0.1;
